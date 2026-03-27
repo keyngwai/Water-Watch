@@ -11,6 +11,7 @@ import { Report, STATUS_LABELS } from '../../types';
 
 export default function AdminMapView() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);

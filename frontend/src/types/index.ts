@@ -73,6 +73,14 @@ export interface Report {
   status: ReportStatus;
   assigned_to: string | null;
   technician_name?: string | null;
+  technician_job_role?: string | null;
+  technician?: {
+    id: string;
+    full_name?: string;
+    specialization?: string | null;
+    employee_id?: string;
+    job_role?: string | null;
+  };
   verified_at: string | null;
   resolved_at: string | null;
   estimated_resolution_date: string | null;
@@ -91,6 +99,7 @@ export interface Technician {
   full_name: string;
   email: string;
   phone: string | null;
+  job_role: string | null;
   department: string | null;
   specialization: string | null;
   county: string;
@@ -168,3 +177,15 @@ export const KENYAN_COUNTIES = [
   'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi',
   'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot',
 ];
+
+/** Operational job roles for field staff (must match backend `TECHNICIAN_JOB_ROLE_VALUES`). */
+export const TECHNICIAN_JOB_ROLES = [
+  'Field Technician',
+  'Senior Field Technician',
+  'Water Quality Analyst',
+  'Pipeline & Distribution Specialist',
+  'Borehole & Well Technician',
+  'Community Liaison Officer',
+  'Emergency Response Technician',
+  'County Supervisor',
+] as const;

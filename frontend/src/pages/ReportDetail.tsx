@@ -1,16 +1,19 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { StatusBadge, CategoryBadge, SeverityBadge } from '../components/shared/Badges';
-import { reportsApi, getApiError } from '../services/api';
+import { reportsApi, techniciansApi, getApiError } from '../services/api';
 import { useAuthStore } from '../context/auth.store';
-import { Report, STATUS_COLORS } from '../types';
+import { Report, STATUS_COLORS, Technician } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ReportDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [selectedTechnician, setSelectedTechnician] = useState('');
+  const [assignComment, setAssignComment] = useState('');
 
   const { data: report, isLoading, refetch } = useQuery({
     queryKey: ['report', id],
@@ -21,6 +24,34 @@ export default function ReportDetail() {
   const upvoteMutation = useMutation({
     mutationFn: () => reportsApi.upvote(id!),
     onSuccess: () => { toast.success('Vote recorded!'); refetch(); },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+
+  const { data: technicians } = useQuery({
+    // Load technicians for the report's county so the dropdown stays relevant.
+    queryKey: ['technicians', 'detail-assign', (report as Report | undefined)?.county],
+    queryFn: () => techniciansApi.list((report as Report).county),
+    enabled: !!report && user?.role === 'admin',
+  });
+
+  // Keep the selected technician in sync with the report's current assignment.
+  useEffect(() => {
+    if (report?.assigned_to) {
+      setSelectedTechnician(report.assigned_to);
+    }
+  }, [report?.assigned_to, report?.id]);
+
+  const assignMutation = useMutation({
+    mutationFn: () => reportsApi.assignTechnician(id!, {
+      technician_id: selectedTechnician,
+      comment: assignComment || undefined,
+      is_public: false,
+    }),
+    onSuccess: () => {
+      toast.success('Technician assigned.');
+      setAssignComment('');
+      refetch();
+    },
     onError: (err) => toast.error(getApiError(err)),
   });
 
@@ -123,9 +154,11 @@ export default function ReportDetail() {
                 <div style={styles.techIcon}>👷</div>
                 <div>
                   <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>
-                    {(r as unknown as Record<string, unknown>).technician_name as string || 'Technician assigned'}
+                    {r.technician?.full_name || 'Technician assigned'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Field Technician</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    {r.technician?.job_role || r.technician?.specialization || 'Field team'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -152,6 +185,40 @@ export default function ReportDetail() {
               ))}
             </div>
           </div>
+
+          {user?.role === 'admin' && (
+            <div style={styles.card}>
+              <h3 style={styles.sectionTitle}>Assign Technician</h3>
+              {/* Admin chooses a technician + optional note, then the backend records an audit log. */}
+              <select
+                style={styles.assignInput}
+                value={selectedTechnician}
+                onChange={(e) => setSelectedTechnician(e.target.value)}
+              >
+                <option value="">Select technician...</option>
+                {(technicians as Technician[] | undefined)?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.full_name}
+                    {t.job_role ? ` — ${t.job_role}` : ''} ({t.employee_id})
+                    {!t.is_available ? ' [BUSY]' : ''}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                style={{ ...styles.assignInput, minHeight: '80px', resize: 'vertical' }}
+                placeholder="Optional assignment note..."
+                value={assignComment}
+                onChange={(e) => setAssignComment(e.target.value)}
+              />
+              <button
+                style={{ ...styles.assignBtn, opacity: selectedTechnician ? 1 : 0.6 }}
+                disabled={!selectedTechnician || assignMutation.isPending}
+                onClick={() => assignMutation.mutate()}
+              >
+                {assignMutation.isPending ? 'Assigning...' : 'Assign Technician'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -245,4 +312,28 @@ const styles: Record<string, React.CSSProperties> = {
   timelineItem: { display: 'flex', gap: '12px' },
   timelineDot: { width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, marginTop: '4px' },
   timelineContent: { flex: 1 },
+  assignInput: {
+    width: '100%',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
+    padding: '10px',
+    fontSize: '13px',
+    color: '#0f172a',
+    marginBottom: '10px',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+    background: 'white',
+  },
+  assignBtn: {
+    width: '100%',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '10px 12px',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    background: '#0369a1',
+    color: 'white',
+    fontFamily: 'inherit',
+  },
 };

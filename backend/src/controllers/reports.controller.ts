@@ -8,6 +8,7 @@ import { sendSuccess, sendCreated, parsePagination } from '../utils/response';
 // ---------------------------------------------------------------------------
 export async function createReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    // Persist the report first; uploaded images are processed afterwards.
     const report = await reportsService.createReport({
       ...req.body,
       citizen_id: req.user!.sub,
@@ -16,7 +17,8 @@ export async function createReport(req: Request, res: Response, next: NextFuncti
       source: 'web',
     });
 
-    // Process uploaded images (if any) — non-blocking from the user's perspective
+    // Process uploaded images (if any).
+    // If no files are provided, this block becomes a no-op.
     const files = req.files as Express.Multer.File[] | undefined;
     let images: Record<string, unknown>[] = [];
     if (files && files.length > 0) {
@@ -130,11 +132,28 @@ export async function adminListReports(req: Request, res: Response, next: NextFu
 // ---------------------------------------------------------------------------
 export async function updateReportStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    // Admin controls workflow transitions (verify/assign/resolve/reject) through this endpoint.
     const updated = await reportsService.updateReportStatus(req.params.id, {
       ...req.body,
       admin_id: req.user!.sub,
     });
     sendSuccess(res, updated, `Report status updated to '${updated.status}'.`);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Admin: Assign a technician to a report (without status change)
+// ---------------------------------------------------------------------------
+export async function assignTechnician(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    // Assignment is separated from status updates so admins can route technicians independently.
+    const updated = await reportsService.assignReportTechnician(req.params.id, {
+      ...req.body,
+      admin_id: req.user!.sub,
+    });
+    sendSuccess(res, updated, 'Technician assigned successfully.');
   } catch (err) {
     next(err);
   }

@@ -41,6 +41,7 @@ export function buildPaginationMeta(
   page: number,
   limit: number
 ): PaginationMeta {
+  // Centralized pagination math to keep client meta usage consistent.
   const totalPages = Math.ceil(total / limit);
   return {
     page,
@@ -56,6 +57,9 @@ export function parsePagination(
   pageStr?: string,
   limitStr?: string
 ): { page: number; limit: number; offset: number } {
+  // We clamp values to avoid invalid/huge queries.
+  // - page defaults to 1
+  // - limit defaults to 20 and is capped at 100
   const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(limitStr || '20', 10) || 20));
   return { page, limit, offset: (page - 1) * limit };

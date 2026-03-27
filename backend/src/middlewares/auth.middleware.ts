@@ -8,6 +8,7 @@ import { sendError } from '../utils/response';
 // Attaches the decoded payload to req.user for downstream use.
 // ---------------------------------------------------------------------------
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
+  // We expect a standard `Authorization: Bearer <jwt>` header.
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,6 +22,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     const secret = process.env.JWT_SECRET;
     if (!secret) throw new Error('JWT_SECRET is not configured');
 
+    // `req.user` is attached for downstream controller logic (role checks, citizen id, etc.).
     const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded;
     next();
@@ -68,6 +70,7 @@ export function authorize(...allowedRoles: UserRole[]) {
 // additional data to logged-in users (e.g., "did you upvote this?").
 // ---------------------------------------------------------------------------
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  // Optional JWT parsing so public endpoints can still personalize UI for logged-in users.
   const authHeader = req.headers.authorization;
 
   if (authHeader?.startsWith('Bearer ')) {

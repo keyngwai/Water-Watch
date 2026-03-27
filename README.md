@@ -113,7 +113,7 @@ users (id, email, phone, full_name, password_hash, role, county, ...)
   │     ├── admin_actions (id, report_id→reports, admin_id→users, action_type, ...)
   │     └── report_upvotes (citizen_id→users, report_id→reports)
   │
-  └── technicians (id, user_id→users, employee_id, specialization, county, ...)
+  └── technicians (id, user_id→users, employee_id, job_role, specialization, county, ...)
         └── reports.assigned_to → technicians.id
 ```
 
@@ -334,6 +334,7 @@ Register new technician. **Requires admin.**
   "password": "TempPass123",
   "full_name": "James Ochieng",
   "employee_id": "WB-2024-001",
+  "job_role": "Field Technician",
   "department": "Borehole Services",
   "specialization": "Borehole Drilling",
   "county": "Kisumu",
@@ -422,7 +423,19 @@ npm run migrate
 npm run seed:admin
 ```
 
-### 5. Start Development Servers
+### 5. (Optional) Seed technicians by county & role
+
+Creates **3 technicians per county** across all 47 counties, with rotating **job roles** (Field Technician, Water Quality Analyst, County Supervisor, etc.). Default password: `TechPass123`.
+
+```bash
+# From backend/ — run migrations first so `job_role` exists
+npm run migrate
+npm run seed:technicians
+```
+
+> Emails look like `tech.c0.0@majiwatch.seed`. Skip or edit `seed-technicians.ts` in production.
+
+### 6. Start Development Servers
 
 ```bash
 # Terminal 1: Backend (port 3000)

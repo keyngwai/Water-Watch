@@ -47,6 +47,13 @@ export interface UpdateStatusInput {
   admin_id: string;
 }
 
+export interface AssignReportInput {
+  technician_id: string;
+  comment?: string;
+  is_public?: boolean;
+  admin_id: string;
+}
+
 // ---------------------------------------------------------------------------
 // createReport
 // ---------------------------------------------------------------------------
@@ -75,6 +82,7 @@ export async function getReportById(
   id: string,
   requestingUserId?: string
 ): Promise<Record<string, unknown>> {
+  // Public reports are readable by anyone; private reports are readable only by the owner.
   const report = await queryOne<ReportRow>(
     'SELECT * FROM reports WHERE id = $1 AND (is_public = TRUE OR citizen_id = $2)',
     [id, requestingUserId ?? '00000000-0000-0000-0000-000000000000']
@@ -82,9 +90,10 @@ export async function getReportById(
 
   if (!report) throw new AppError('Report not found.', 404, 'NOT_FOUND');
 
-  // Increment view count (fire-and-forget)
+  // Increment view count (fire-and-forget so we don't slow down the response).
   query('UPDATE reports SET view_count = view_count + 1 WHERE id = $1', [id]).catch(() => null);
 
+  // Bundle the report with related images + timeline + lightweight citizen/technician profiles.
   const [images, publicActions, citizen, technician] = await Promise.all([
     query<Record<string, unknown>>(
       'SELECT id, public_url, filename, is_primary FROM report_images WHERE report_id = $1',
@@ -104,7 +113,7 @@ export async function getReportById(
     ),
     report.assigned_to
       ? queryOne<Record<string, unknown>>(`
-          SELECT t.id, u.full_name, t.specialization, t.employee_id
+          SELECT t.id, u.full_name, t.specialization, t.employee_id, t.job_role
           FROM technicians t JOIN users u ON u.id = t.user_id
           WHERE t.id = $1
         `, [report.assigned_to])
@@ -120,6 +129,7 @@ export async function getReportById(
 export async function listReports(
   opts: ListReportsOptions
 ): Promise<{ reports: Record<string, unknown>[]; meta: ReturnType<typeof buildPaginationMeta> }> {
+  // Build WHERE conditions dynamically so we only filter on fields the client provided.
   const conditions: string[] = ['r.is_public = TRUE'];
   const params: unknown[] = [];
   let paramIdx = 1;
@@ -145,6 +155,7 @@ export async function listReports(
 
   // Proximity filter using PostGIS
   if (opts.lat !== undefined && opts.lng !== undefined && opts.radius_km) {
+    // Uses `location_geom` (GEOGRAPHY) and converts km to meters.
     conditions.push(`
       ST_DWithin(
         r.location_geom,
@@ -194,6 +205,7 @@ export async function listReports(
 export async function adminListReports(
   opts: ListReportsOptions
 ): Promise<{ reports: Record<string, unknown>[]; meta: ReturnType<typeof buildPaginationMeta> }> {
+  // Admin can see everything (including non-public reports), so we don't filter by `is_public`.
   const conditions: string[] = [];
   const params: unknown[] = [];
   let paramIdx = 1;
@@ -209,7 +221,7 @@ export async function adminListReports(
     query<Record<string, unknown>>(`
       SELECT r.*,
              u.full_name as citizen_name, u.phone as citizen_phone,
-             tu.full_name as technician_name, t.employee_id as technician_employee_id
+             tu.full_name as technician_name, t.employee_id as technician_employee_id, t.job_role as technician_job_role
       FROM reports r
       JOIN users u ON u.id = r.citizen_id
       LEFT JOIN technicians t ON t.id = r.assigned_to
@@ -235,6 +247,7 @@ export async function updateReportStatus(
   input: UpdateStatusInput
 ): Promise<ReportRow> {
   return withTransaction(async (client: PoolClient) => {
+    // Lock row to prevent conflicting updates (e.g., two admins changing status at once).
     const report = await client.query<ReportRow>(
       'SELECT * FROM reports WHERE id = $1 FOR UPDATE',
       [reportId]
@@ -284,6 +297,54 @@ export async function updateReportStatus(
       reportId, input.admin_id, 'status_update',
       current.status, input.status,
       input.technician_id ?? null,
+      input.comment ?? null,
+      input.is_public ?? false,
+    ]);
+
+    return updatedReport.rows[0];
+  });
+}
+
+// ---------------------------------------------------------------------------
+// assignReportTechnician — transactional: assigns technician + audit log
+// ---------------------------------------------------------------------------
+export async function assignReportTechnician(
+  reportId: string,
+  input: AssignReportInput
+): Promise<ReportRow> {
+  return withTransaction(async (client: PoolClient) => {
+    // Assignment is its own action: we only change `assigned_to` and record it in the audit log.
+    const report = await client.query<ReportRow>(
+      'SELECT * FROM reports WHERE id = $1 FOR UPDATE',
+      [reportId]
+    );
+
+    if (report.rowCount === 0) {
+      throw new AppError('Report not found.', 404, 'NOT_FOUND');
+    }
+
+    const technicianExists = await client.query<{ id: string }>(
+      'SELECT id FROM technicians WHERE id = $1',
+      [input.technician_id]
+    );
+    if (technicianExists.rowCount === 0) {
+      throw new AppError('Technician not found.', 404, 'NOT_FOUND');
+    }
+
+    const current = report.rows[0];
+
+    const updatedReport = await client.query<ReportRow>(
+      'UPDATE reports SET assigned_to = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [input.technician_id, reportId]
+    );
+
+    await client.query(`
+      INSERT INTO admin_actions (report_id, admin_id, action_type, previous_status, new_status, assigned_to, comment, is_public)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [
+      reportId, input.admin_id, 'assign',
+      current.status, current.status,
+      input.technician_id,
       input.comment ?? null,
       input.is_public ?? false,
     ]);

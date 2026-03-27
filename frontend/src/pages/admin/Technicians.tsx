@@ -3,12 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 import { techniciansApi, getApiError } from '../../services/api';
-import { Technician, KENYAN_COUNTIES } from '../../types';
+import { Technician, KENYAN_COUNTIES, TECHNICIAN_JOB_ROLES } from '../../types';
 
 function AddTechnicianModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', password: '',
-    employee_id: '', department: '', specialization: '', county: '',
+    employee_id: '', job_role: '', department: '', specialization: '', county: '',
   });
 
   const mutation = useMutation({
@@ -48,6 +48,21 @@ function AddTechnicianModal({ onClose, onSuccess }: { onClose: () => void; onSuc
         </div>
 
         <div style={{ marginBottom: '14px' }}>
+          {/* Operational job role within the county team (distinct from auth.user.role). */}
+          <label style={ms.label}>Job role *</label>
+          <select
+            style={ms.input}
+            value={form.job_role}
+            onChange={(e) => setForm((f) => ({ ...f, job_role: e.target.value }))}
+          >
+            <option value="">Select role</option>
+            {TECHNICIAN_JOB_ROLES.map((role) => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '14px' }}>
           <label style={ms.label}>County *</label>
           <select style={ms.input} value={form.county} onChange={(e) => setForm((f) => ({ ...f, county: e.target.value }))}>
             <option value="">Select County</option>
@@ -65,7 +80,15 @@ function AddTechnicianModal({ onClose, onSuccess }: { onClose: () => void; onSuc
           <button onClick={onClose} style={ms.cancelBtn}>Cancel</button>
           <button
             onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !form.full_name || !form.email || !form.employee_id || !form.county || !form.password}
+            disabled={
+              mutation.isPending
+              || !form.full_name
+              || !form.email
+              || !form.employee_id
+              || !form.job_role
+              || !form.county
+              || !form.password
+            }
             style={{ ...ms.saveBtn, opacity: mutation.isPending ? 0.7 : 1 }}
           >
             {mutation.isPending ? 'Registering...' : 'Register Technician'}
@@ -206,6 +229,7 @@ export default function AdminTechnicians() {
                 <InfoRow label="📧 Email" value={tech.email} />
                 {tech.phone && <InfoRow label="📞 Phone" value={tech.phone} />}
                 <InfoRow label="🗺 County" value={tech.county} />
+                {tech.job_role && <InfoRow label="🪪 Job role" value={tech.job_role} />}
                 {tech.department && <InfoRow label="🏢 Department" value={tech.department} />}
                 {tech.specialization && <InfoRow label="🔧 Specialization" value={tech.specialization} />}
               </div>

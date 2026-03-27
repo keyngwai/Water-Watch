@@ -33,6 +33,7 @@ export async function query<T extends Record<string, unknown>>(
   text: string,
   params?: unknown[]
 ): Promise<T[]> {
+  // Wrapper so we can log query duration and keep the rest of the codebase clean.
   const start = Date.now();
   try {
     const result = await pool.query<T>(text, params);

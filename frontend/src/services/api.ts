@@ -85,6 +85,8 @@ export interface ReportFilters {
 }
 
 function normalizeReport(report: any): Report {
+  // Postgres often returns numeric/decimal fields as strings, so we normalize
+  // to keep the frontend types predictable.
   return {
     ...report,
     latitude: Number(report.latitude),
@@ -98,6 +100,7 @@ function normalizeReport(report: any): Report {
 
 export const reportsApi = {
   list: async (filters: ReportFilters = {}): Promise<{ reports: Report[]; meta: PaginationMeta }> => {
+    // Only include non-empty filter values so we don't send unnecessary query params.
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
     );
@@ -141,6 +144,16 @@ export const reportsApi = {
     estimated_resolution_date?: string;
   }): Promise<Report> => {
     const res = await api.patch<ApiResponse<Report>>(`/reports/${id}/status`, data);
+    return normalizeReport(res.data.data);
+  },
+
+  assignTechnician: async (id: string, data: {
+    technician_id: string;
+    comment?: string;
+    is_public?: boolean;
+  }): Promise<Report> => {
+    // Dedicated endpoint that updates `reports.assigned_to` without requiring a status transition.
+    const res = await api.patch<ApiResponse<Report>>(`/reports/${id}/assign`, data);
     return normalizeReport(res.data.data);
   },
 

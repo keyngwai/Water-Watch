@@ -9,12 +9,15 @@ export interface CreateTechnicianInput {
   full_name: string;
   phone?: string;
   employee_id: string;
+  job_role?: string;
   department?: string;
   specialization?: string;
   county: string;
 }
 
 export async function createTechnician(input: CreateTechnicianInput): Promise<Record<string, unknown>> {
+  // We create a shared user account first (role='technician'),
+  // then attach the operational technician profile in the `technicians` table.
   const user = await createAdminUser({
     email: input.email,
     password: input.password,
@@ -25,28 +28,37 @@ export async function createTechnician(input: CreateTechnicianInput): Promise<Re
   });
 
   const rows = await query<TechnicianRow>(`
-    INSERT INTO technicians (user_id, employee_id, department, specialization, county)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO technicians (user_id, employee_id, job_role, department, specialization, county)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *
-  `, [user.id, input.employee_id, input.department ?? null, input.specialization ?? null, input.county]);
+  `, [
+    user.id,
+    input.employee_id,
+    input.job_role ?? null,
+    input.department ?? null,
+    input.specialization ?? null,
+    input.county,
+  ]);
 
   return { ...user, technician: rows[0] };
 }
 
 export async function listTechnicians(county?: string): Promise<Record<string, unknown>[]> {
+  // Returns technicians enriched with a simple "active assignments" count.
+  // This is used by the admin UI to show availability/busyness.
   const countyFilter = county ? 'WHERE t.county ILIKE $1' : '';
   const params = county ? [`%${county}%`] : [];
 
   return query<Record<string, unknown>>(`
-    SELECT t.id, t.employee_id, t.department, t.specialization, t.county, t.is_available,
+    SELECT t.id, t.employee_id, t.job_role, t.department, t.specialization, t.county, t.is_available,
            u.full_name, u.email, u.phone,
            COUNT(r.id) FILTER (WHERE r.status = 'in_progress') as active_assignments
     FROM technicians t
     JOIN users u ON u.id = t.user_id
     LEFT JOIN reports r ON r.assigned_to = t.id
     ${countyFilter}
-    GROUP BY t.id, u.full_name, u.email, u.phone
-    ORDER BY u.full_name
+    GROUP BY t.id, u.id, u.full_name, u.email, u.phone
+    ORDER BY t.county, u.full_name
   `, params);
 }
 

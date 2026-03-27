@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult, body, param, query } from 'express-validator';
+import { TECHNICIAN_JOB_ROLE_VALUES } from '../constants/technicianRoles';
 
 // ---------------------------------------------------------------------------
 // validate: Runs after express-validator chains; short-circuits if errors exist.
 // ---------------------------------------------------------------------------
 export function validate(req: Request, res: Response, next: NextFunction): void {
+  // `express-validator` accumulates rule results on the request.
+  // If anything fails, we short-circuit with a 422 response.
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -106,5 +109,32 @@ export const reportValidation = {
     body('is_public').optional().isBoolean(),
     body('technician_id').optional().isUUID(),
     body('estimated_resolution_date').optional().isISO8601(),
+  ],
+
+  assignTechnician: [
+    // Required payload for `PATCH /api/reports/:id/assign`.
+    param('id').isUUID().withMessage('Invalid report ID'),
+    body('technician_id').isUUID().withMessage('Valid technician ID is required'),
+    body('comment').optional().trim().isLength({ max: 2000 }),
+    body('is_public').optional().isBoolean(),
+  ],
+};
+
+export const technicianValidation = {
+  // Used by `POST /api/technicians` to create both the technician user and profile.
+  create: [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage('Password must include uppercase, lowercase, and a number'),
+    body('full_name').trim().isLength({ min: 2, max: 255 }).withMessage('Full name is required'),
+    body('phone').optional({ checkFalsy: true }).isMobilePhone('any').withMessage('Invalid phone number'),
+    body('employee_id').trim().isLength({ min: 2, max: 50 }).withMessage('Employee ID is required'),
+    body('job_role').optional({ checkFalsy: true }).isIn(TECHNICIAN_JOB_ROLE_VALUES).withMessage('Invalid job role'),
+    body('department').optional({ checkFalsy: true }).trim().isLength({ max: 150 }),
+    body('specialization').optional({ checkFalsy: true }).trim().isLength({ max: 150 }),
+    body('county').trim().isLength({ min: 2, max: 100 }).withMessage('County is required'),
   ],
 };
