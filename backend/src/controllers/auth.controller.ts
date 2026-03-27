@@ -22,6 +22,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
 export async function getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    // `authenticate` attaches JWT payload to `req.user`, so we can use `sub` as the user id.
     const user = await authService.getUserById(req.user!.sub);
     sendSuccess(res, user);
   } catch (err) {

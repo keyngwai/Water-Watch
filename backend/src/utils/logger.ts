@@ -18,6 +18,8 @@ const prodFormat = combine(
   json()
 );
 
+// Logger: dev-friendly formatting + optional file transport.
+// We use JSON logs in production so they can be shipped to log aggregators.
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: process.env.NODE_ENV === 'production' ? prodFormat : devFormat,

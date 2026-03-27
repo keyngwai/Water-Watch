@@ -66,6 +66,9 @@ if (process.env.NODE_ENV !== 'test') {
 // ---------------------------------------------------------------------------
 // Rate Limiting
 // ---------------------------------------------------------------------------
+// Two different limiters are used:
+// - `apiLimiter` for all API calls to reduce abuse/spam
+// - `authLimiter` stricter limits on login/register to slow brute-force attempts
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
@@ -88,6 +91,8 @@ app.use('/api/auth/register', authLimiter);
 // ---------------------------------------------------------------------------
 // Static File Serving (local uploads fallback)
 // ---------------------------------------------------------------------------
+// When using local storage (development), uploaded images may be served from `/uploads`.
+// In production/supabase, uploads are typically served via the storage provider URLs.
 app.use('/uploads', express.static(path.resolve(process.env.LOCAL_UPLOAD_PATH || './uploads')));
 
 // ---------------------------------------------------------------------------
@@ -132,6 +137,7 @@ async function startServer(): Promise<void> {
     }
     logger.info('Database connection established.');
 
+    // Start listening only after DB is healthy; avoids "half-deployed" behavior.
     app.listen(PORT, () => {
       logger.info(`Maji Watch API running on port ${PORT}`, {
         env: process.env.NODE_ENV,

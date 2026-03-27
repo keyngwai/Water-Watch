@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as techController from '../controllers/technicians.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
+import { technicianValidation, validate } from '../middlewares/validation.middleware';
 
 const router = Router();
 
@@ -20,7 +21,14 @@ router.get('/:id', authenticate, authorize('admin'), techController.getTechnicia
  * POST /api/technicians
  * Admin: register a new technician (creates user account + technician profile)
  */
-router.post('/', authenticate, authorize('admin'), techController.createTechnician);
+router.post(
+  '/',
+  authenticate,
+  authorize('admin'),
+  technicianValidation.create,
+  validate,
+  techController.createTechnician
+);
 
 /**
  * DELETE /api/technicians/:id

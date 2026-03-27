@@ -94,4 +94,17 @@ router.patch(
   reportsController.updateReportStatus
 );
 
+/**
+ * PATCH /api/reports/:id/assign
+ * Assign technician to a report without changing status
+ */
+router.patch(
+  '/:id/assign',
+  authenticate,
+  authorize('admin'),
+  reportValidation.assignTechnician,
+  validate,
+  reportsController.assignTechnician
+);
+
 export default router;

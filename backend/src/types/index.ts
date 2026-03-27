@@ -71,6 +71,7 @@ export interface ReportRow {
   source: string;
   created_at: Date;
   updated_at: Date;
+  [key: string]: unknown;
 }
 
 export interface ReportImageRow {
@@ -91,6 +92,8 @@ export interface TechnicianRow {
   id: string;
   user_id: string;
   employee_id: string;
+  // Operational role within the county team (e.g., Field Technician), not the auth `user.role`.
+  job_role: string | null;
   department: string | null;
   specialization: string | null;
   county: string;

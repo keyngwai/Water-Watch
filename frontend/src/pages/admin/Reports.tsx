@@ -15,6 +15,104 @@ const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
   { value: 'rejected', label: '✗ Reject Report' },
 ];
 
+function AssignTechnicianModal({
+  report,
+  onClose,
+  onSuccess,
+}: {
+  report: Report;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  // Modal state for the selected technician + optional admin note.
+  const [technicianId, setTechnicianId] = useState(report.assigned_to ?? '');
+  const [comment, setComment] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+
+  const { data: technicians } = useQuery({
+    // Keep technician choices limited to the report's county.
+    queryKey: ['technicians', report.county],
+    queryFn: () => techniciansApi.list(report.county),
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => reportsApi.assignTechnician(report.id, {
+      technician_id: technicianId,
+      comment: comment || undefined,
+      is_public: isPublic,
+    }),
+    onSuccess: () => {
+      toast.success('Technician assignment updated.');
+      onSuccess();
+      onClose();
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+
+  return (
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <h3 style={{ color: '#e2e8f0', margin: 0, fontSize: '18px' }}>Assign Technician</h3>
+          <button onClick={onClose} style={styles.closeBtn}>×</button>
+        </div>
+
+        <div style={styles.modalRef}>
+          <span style={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace' }}>
+            {report.reference_code}
+          </span>
+          <StatusBadge status={report.status} />
+        </div>
+        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 20px' }}>{report.title}</p>
+
+        <label style={styles.label}>Technician</label>
+        <select
+          style={styles.input}
+          value={technicianId}
+          onChange={(e) => setTechnicianId(e.target.value)}
+        >
+          <option value="">Select a technician...</option>
+          {technicians?.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.full_name}
+              {t.job_role ? ` — ${t.job_role}` : ''} ({t.employee_id}) — {t.county}
+              {!t.is_available ? ' [BUSY]' : ''}
+            </option>
+          ))}
+        </select>
+
+        <label style={styles.label}>Assignment Note (optional)</label>
+        <textarea
+          style={{ ...styles.input, minHeight: '90px', resize: 'vertical' }}
+          placeholder="Add assignment context for this technician..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+
+        <label style={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+          />
+          <span>Show note to citizen</span>
+        </label>
+
+        <div style={styles.modalActions}>
+          <button onClick={onClose} style={styles.cancelBtn}>Cancel</button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!technicianId || mutation.isPending}
+            style={{ ...styles.saveBtn, opacity: !technicianId ? 0.5 : 1 }}
+          >
+            {mutation.isPending ? 'Assigning...' : 'Assign Technician'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UpdateStatusModal({
   report,
   onClose,
@@ -94,7 +192,8 @@ function UpdateStatusModal({
               <option value="">— No assignment —</option>
               {technicians?.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.full_name} ({t.employee_id}) — {t.county}
+                  {t.full_name}
+                  {t.job_role ? ` — ${t.job_role}` : ''} ({t.employee_id}) — {t.county}
                   {!t.is_available ? ' [BUSY]' : ''}
                 </option>
               ))}
@@ -141,6 +240,7 @@ export default function AdminReports() {
 
   const [filters, setFilters] = useState({ status: '', category: '', county: '', page: 1 });
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [assignmentReport, setAssignmentReport] = useState<Report | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-reports', filters],
@@ -194,6 +294,16 @@ export default function AdminReports() {
         <UpdateStatusModal
           report={selectedReport}
           onClose={() => setSelectedReport(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reports'], exact: false });
+            queryClient.invalidateQueries({ queryKey: ['admin-reports-map'], exact: false });
+          }}
+        />
+      )}
+      {assignmentReport && (
+        <AssignTechnicianModal
+          report={assignmentReport}
+          onClose={() => setAssignmentReport(null)}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['admin-reports'], exact: false });
             queryClient.invalidateQueries({ queryKey: ['admin-reports-map'], exact: false });
@@ -259,19 +369,39 @@ export default function AdminReports() {
                     {report.citizen_name || '—'}
                   </td>
                   <td style={{ ...styles.td, fontSize: '12px', color: '#94a3b8' }}>
-                    {report.technician_name || <span style={{ color: '#475569' }}>Unassigned</span>}
+                    {report.technician_name ? (
+                      <div>
+                        <div>{report.technician_name}</div>
+                        {report.technician_job_role && (
+                          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                            {report.technician_job_role}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#475569' }}>Unassigned</span>
+                    )}
                   </td>
                   <td style={styles.td}><StatusBadge status={report.status} /></td>
                   <td style={{ ...styles.td, fontSize: '11px', color: '#64748b' }}>
                     {new Date(report.created_at).toLocaleDateString('en-KE')}
                   </td>
                   <td style={styles.td}>
-                    <button
-                      onClick={() => setSelectedReport(report as unknown as Report)}
-                      style={styles.actionBtn}
-                    >
-                      Update
-                    </button>
+                    {/* Quick actions for this report row */}
+                    <div style={styles.actionGroup}>
+                      <button
+                        onClick={() => setAssignmentReport(report as unknown as Report)}
+                        style={styles.assignBtn}
+                      >
+                        Assign
+                      </button>
+                      <button
+                        onClick={() => setSelectedReport(report as unknown as Report)}
+                        style={styles.actionBtn}
+                      >
+                        Update
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -363,6 +493,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     fontWeight: 600,
     whiteSpace: 'nowrap',
+  },
+  assignBtn: {
+    padding: '5px 12px',
+    background: '#334155',
+    color: '#e2e8f0',
+    border: '1px solid #475569',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+  },
+  actionGroup: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
   },
   pagination: { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center', padding: '16px' },
   pageBtn: {
