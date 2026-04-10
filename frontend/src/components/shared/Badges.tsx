@@ -29,17 +29,6 @@ export function StatusBadge({ status }: { status: ReportStatus }) {
 }
 
 export function CategoryBadge({ category }: { category: IssueCategory }) {
-  const CATEGORY_ICONS: Record<IssueCategory, string> = {
-    broken_borehole: '🔧',
-    contaminated_water: '☣️',
-    illegal_connection: '⚡',
-    water_shortage: '🏜️',
-    unfair_pricing: '💰',
-    pipe_burst: '💦',
-    no_water_supply: '🚰',
-    other: '❓',
-  };
-
   return (
     <span style={{
       display: 'inline-flex',
@@ -53,7 +42,7 @@ export function CategoryBadge({ category }: { category: IssueCategory }) {
       color: '#475569',
       border: '1px solid #e2e8f0',
     }}>
-      {CATEGORY_ICONS[category]} {CATEGORY_LABELS[category]}
+      {CATEGORY_LABELS[category]}
     </span>
   );
 }
@@ -82,6 +71,8 @@ export function ReportCard({
   report,
   onClick,
   compact = false,
+  showUpvoteButton = false,
+  onUpvote,
 }: {
   report: {
     id: string;
@@ -99,6 +90,8 @@ export function ReportCard({
   };
   onClick?: () => void;
   compact?: boolean;
+  showUpvoteButton?: boolean;
+  onUpvote?: (id: string) => void;
 }) {
   return (
     <div
@@ -157,11 +150,42 @@ export function ReportCard({
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-            📍 {report.location_name || report.county}
+            {report.location_name || report.county}
           </span>
-          <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-            👍 {report.upvote_count}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+              {report.upvote_count} upvotes
+            </span>
+            {showUpvoteButton && onUpvote && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpvote(report.id);
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #0369a1',
+                  background: 'transparent',
+                  color: '#0369a1',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#0369a1';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLButtonElement).style.color = '#0369a1';
+                }}
+              >
+                Upvote
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

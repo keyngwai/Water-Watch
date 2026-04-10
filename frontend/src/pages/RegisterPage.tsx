@@ -24,7 +24,7 @@ export default function RegisterPage() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.logo}>💧</div>
+        {/* Logo removed */}
         <h1 style={styles.title}>Create Account</h1>
         <p style={styles.subtitle}>Join Maji Watch to report water issues in your community</p>
         <form onSubmit={handleSubmit}>

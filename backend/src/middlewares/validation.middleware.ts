@@ -62,7 +62,8 @@ export const authValidation = {
       .withMessage('Password must include uppercase, lowercase, and a number'),
     body('full_name').trim().isLength({ min: 2, max: 255 }).withMessage('Full name is required'),
     body('phone').optional().isMobilePhone('any').withMessage('Invalid phone number'),
-    body('county').trim().isLength({ min: 2, max: 100 }).withMessage('County is required'),
+    body('county').optional().trim().isLength({ min: 2, max: 100 }).withMessage('County must be 2–100 characters if provided'),
+    body('is_root_admin').optional().isBoolean().withMessage('is_root_admin must be a boolean'),
   ],
 };
 

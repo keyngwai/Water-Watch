@@ -1,9 +1,10 @@
-import { useState, useRef, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 import { reportsApi, getApiError } from '../../services/api';
+import { useAuthStore } from '../../context/auth.store';
 
 const LocationPicker = lazy(() =>
   import('../../components/shared/Map').then((m) => ({ default: m.LocationPicker }))
@@ -25,6 +26,7 @@ const SEVERITIES: { value: SeverityLevel; label: string; desc: string }[] = [
 export default function SubmitReport() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuthStore();
 
   const [form, setForm] = useState({
     category: '' as IssueCategory | '',
@@ -34,7 +36,7 @@ export default function SubmitReport() {
     latitude: undefined as number | undefined,
     longitude: undefined as number | undefined,
     location_name: '',
-    county: '',
+    county: user?.county || '',
     sub_county: '',
     ward: '',
   });
@@ -60,12 +62,19 @@ export default function SubmitReport() {
       const addr = data.address || {};
 
       // Nominatim uses different keys depending on location; we try a few
-      const county = addr.county || addr.state || addr.region;
-      const subCounty = addr.city_district || addr.suburb || addr.town || addr.village;
-      const ward = addr.neighbourhood || addr.hamlet || addr.locality;
+      let county = addr.county || addr.state || addr.region || '';
+      const subCounty = addr.city_district || addr.suburb || addr.town || addr.village || '';
+      const ward = addr.neighbourhood || addr.hamlet || addr.locality || '';
       const locationName = data.display_name;
 
-      return { county, sub_county: subCounty, ward, location_name: locationName };
+      // Normalize county name and match against Kenyan counties
+      county = county.toLowerCase().replace(/\s+county$/, '').trim();
+      const matchedCounty = KENYAN_COUNTIES.find(c =>
+        c.toLowerCase().replace(/\s+county$/, '').trim() === county ||
+        county.includes(c.toLowerCase().replace(/\s+county$/, '').trim())
+      ) || county; // fallback to original if no match
+
+      return { county: matchedCounty, sub_county: subCounty, ward, location_name: locationName };
     } catch {
       return null;
     }
@@ -134,10 +143,15 @@ export default function SubmitReport() {
 
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (user?.county) {
+      setForm((f) => ({ ...f, county: f.county || user.county || '' }));
+    }
+  }, [user]);
+
   const handleSubmit = async () => {
     if (!form.category) return toast.error('Please select an issue category.');
     if (!form.title.trim()) return toast.error('Please provide a title.');
-    if (form.description.length < 20) return toast.error('Description must be at least 20 characters.');
     if (!form.latitude || !form.longitude) return toast.error('Please set the issue location on the map.');
     if (!form.county) return toast.error('Please select a county.');
 
@@ -166,8 +180,7 @@ export default function SubmitReport() {
 
   const isStepValid = (s: number) => {
     if (s === 1) return form.category !== '' && form.title.trim().length >= 5;
-    if (s === 2) return form.description.length >= 20;
-    if (s === 3) return !!form.latitude && !!form.longitude && !!form.county;
+    if (s === 2) return !!form.latitude && !!form.longitude && !!form.county;
     return true;
   };
 
@@ -175,14 +188,14 @@ export default function SubmitReport() {
     <Layout title="Report Water Issue">
       {/* Progress Steps */}
       <div style={styles.steps}>
-        {['Issue Details', 'Description', 'Location', 'Review & Submit'].map((label, i) => (
+        {['Issue details', 'Location'].map((label, i) => (
           <div key={i} style={styles.stepItem} onClick={() => isStepValid(i) && setStep(i + 1)}>
             <div style={{
               ...styles.stepCircle,
               background: step > i + 1 ? '#10b981' : step === i + 1 ? '#0369a1' : '#e2e8f0',
               color: step > i + 1 || step === i + 1 ? 'white' : '#94a3b8',
             }}>
-              {step > i + 1 ? '✓' : i + 1}
+              {step > i + 1 ? 'Done' : i + 1}
             </div>
             <span style={{
               fontSize: '13px',
@@ -194,7 +207,7 @@ export default function SubmitReport() {
       </div>
 
       <div style={styles.card}>
-        {/* Step 1: Category & Title */}
+        {/* Step 1: Category, severity, title, description */}
         {step === 1 && (
           <div>
             <h2 style={styles.stepTitle}>What type of issue are you reporting?</h2>
@@ -244,14 +257,8 @@ export default function SubmitReport() {
               maxLength={255}
             />
             <span style={styles.charCount}>{form.title.length}/255</span>
-          </div>
-        )}
 
-        {/* Step 2: Description & Images */}
-        {step === 2 && (
-          <div>
-            <h2 style={styles.stepTitle}>Describe the issue</h2>
-            <label style={styles.label}>Full Description <span style={styles.required}>*</span></label>
+            <label style={styles.label}>Full Description (optional)</label>
             <textarea
               id="report-description"
               name="description"
@@ -261,7 +268,7 @@ export default function SubmitReport() {
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               maxLength={5000}
             />
-            <span style={styles.charCount}>{form.description.length}/5000 (minimum 20)</span>
+            <span style={styles.charCount}>{form.description.length}/5000</span>
 
             <label style={styles.label}>Photos (optional, max 5)</label>
             <div
@@ -277,7 +284,7 @@ export default function SubmitReport() {
                 style={{ display: 'none' }}
               />
               <p style={{ color: '#94a3b8', fontSize: '14px' }}>
-                📸 Click to upload photos — JPEG, PNG, WebP up to 10MB each
+                Click to upload photos — JPEG, PNG, WebP up to 10MB each
               </p>
             </div>
             {previews.length > 0 && (
@@ -299,8 +306,8 @@ export default function SubmitReport() {
           </div>
         )}
 
-        {/* Step 3: Location */}
-        {step === 3 && (
+        {/* Step 2: Location */}
+        {step === 2 && (
           <div>
             <h2 style={styles.stepTitle}>Where is the issue located?</h2>
             <div style={{ marginBottom: '16px' }}>
@@ -309,7 +316,7 @@ export default function SubmitReport() {
                 style={styles.gpsBtn}
                 type="button"
               >
-                📍 Use My Current Location
+                Use my current location
               </button>
               <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
                 Or click on the map below to set the location manually
@@ -325,7 +332,7 @@ export default function SubmitReport() {
             </Suspense>
             {form.latitude && (
               <p style={{ fontSize: '12px', color: '#10b981', marginTop: '8px', fontFamily: 'monospace' }}>
-                ✓ Location set: {form.latitude.toFixed(6)}, {form.longitude!.toFixed(6)}
+                Location set: {form.latitude.toFixed(6)}, {form.longitude!.toFixed(6)}
               </p>
             )}
 
@@ -368,23 +375,6 @@ export default function SubmitReport() {
           </div>
         )}
 
-        {/* Step 4: Review */}
-        {step === 4 && (
-          <div>
-            <h2 style={styles.stepTitle}>Review your report</h2>
-            <div style={styles.reviewBox}>
-              <ReviewRow label="Category" value={form.category ? CATEGORY_LABELS[form.category as IssueCategory] : '—'} />
-              <ReviewRow label="Severity" value={form.severity.toUpperCase()} />
-              <ReviewRow label="Title" value={form.title} />
-              <ReviewRow label="Description" value={form.description} />
-              <ReviewRow label="County" value={form.county} />
-              {form.location_name && <ReviewRow label="Location" value={form.location_name} />}
-              <ReviewRow label="GPS" value={form.latitude ? `${form.latitude.toFixed(5)}, ${form.longitude!.toFixed(5)}` : '—'} />
-              <ReviewRow label="Photos" value={`${images.length} file(s) attached`} />
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
         <div style={styles.navButtons}>
           {step > 1 && (
@@ -392,7 +382,7 @@ export default function SubmitReport() {
               ← Back
             </button>
           )}
-          {step < 4 ? (
+          {step < 2 ? (
             <button
               style={{ ...styles.nextBtn, opacity: isStepValid(step) ? 1 : 0.5 }}
               onClick={() => isStepValid(step) && setStep((s) => s + 1)}
@@ -406,21 +396,12 @@ export default function SubmitReport() {
               onClick={handleSubmit}
               disabled={submitting}
             >
-              {submitting ? 'Submitting...' : '✓ Submit Report'}
+              {submitting ? 'Submitting...' : 'Submit report'}
             </button>
           )}
         </div>
       </div>
     </Layout>
-  );
-}
-
-function ReviewRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: 'flex', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ width: '120px', flexShrink: 0, fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: '13px', color: '#0f172a' }}>{value}</span>
-    </div>
   );
 }
 

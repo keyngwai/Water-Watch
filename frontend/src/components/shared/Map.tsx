@@ -118,7 +118,7 @@ export function ReportMap({
                 </div>
                 <strong style={{ fontSize: '14px', color: '#0f172a' }}>{report.title}</strong>
                 <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 8px' }}>
-                  📍 {report.location_name || report.county}
+                  {report.location_name || report.county}
                 </p>
                 <span style={{
                   fontSize: '11px', color: '#94a3b8',
@@ -166,7 +166,7 @@ export function LocationPicker({ onLocationSelect, selectedLat, selectedLng, hei
         fontWeight: 500,
         borderBottom: '1px solid #dbeafe',
       }}>
-        📍 Click the map to set your location
+        Click the map to set your location
       </div>
       <div style={{ height }}>
         <MapContainer

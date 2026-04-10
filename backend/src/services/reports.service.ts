@@ -3,6 +3,7 @@ import { query, queryOne, withTransaction } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 import { ReportRow, ReportStatus, IssueCategory, SeverityLevel } from '../types';
 import { buildPaginationMeta } from '../utils/response';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // ReportService: Core business logic for water issue reports.
@@ -203,7 +204,7 @@ export async function listReports(
 // Admin: listAllReports (bypasses is_public filter, includes private data)
 // ---------------------------------------------------------------------------
 export async function adminListReports(
-  opts: ListReportsOptions
+  opts: ListReportsOptions & { user?: { county: string | null; is_root_admin: boolean } }
 ): Promise<{ reports: Record<string, unknown>[]; meta: ReturnType<typeof buildPaginationMeta> }> {
   // Admin can see everything (including non-public reports), so we don't filter by `is_public`.
   const conditions: string[] = [];
@@ -213,6 +214,22 @@ export async function adminListReports(
   if (opts.status) { conditions.push(`r.status = $${paramIdx++}`); params.push(opts.status); }
   if (opts.category) { conditions.push(`r.category = $${paramIdx++}`); params.push(opts.category); }
   if (opts.county) { conditions.push(`r.county ILIKE $${paramIdx++}`); params.push(`%${opts.county}%`); }
+
+  // County admin restriction: only see reports from their county
+  if (opts.user && !opts.user.is_root_admin && opts.user.county) {
+    logger.debug('Applying county admin filter', {
+      user_county: opts.user.county,
+      is_root_admin: opts.user.is_root_admin,
+    });
+    conditions.push(`r.county = $${paramIdx++}`);
+    params.push(opts.user.county);
+  } else if (opts.user) {
+    logger.debug('User admin filter check', {
+      user_exists: !!opts.user,
+      is_root_admin: opts.user?.is_root_admin,
+      county: opts.user?.county,
+    });
+  }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
@@ -399,7 +416,7 @@ export async function getReportStats(county?: string): Promise<Record<string, un
   const countyFilter = county ? `WHERE county ILIKE $1` : '';
   const params = county ? [`%${county}%`] : [];
 
-  const [statusCounts, categoryCounts, recentTrend] = await Promise.all([
+  const [statusCounts, categoryCounts, recentTrend, countyCounts] = await Promise.all([
     query<Record<string, unknown>>(`
       SELECT status, COUNT(*) as count
       FROM reports ${countyFilter}
@@ -416,9 +433,14 @@ export async function getReportStats(county?: string): Promise<Record<string, un
       ${county ? `WHERE county ILIKE $1 AND created_at >= NOW() - INTERVAL '30 days'` : `WHERE created_at >= NOW() - INTERVAL '30 days'`}
       GROUP BY date ORDER BY date ASC
     `, params),
+    query<Record<string, unknown>>(`
+      SELECT county, COUNT(*) as count
+      FROM reports
+      GROUP BY county ORDER BY count DESC
+    `, []),
   ]);
 
-  return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend };
+  return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
 }
 
 // ---------------------------------------------------------------------------

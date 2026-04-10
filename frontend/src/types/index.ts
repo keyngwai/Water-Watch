@@ -32,6 +32,7 @@ export interface User {
   county: string | null;
   sub_county: string | null;
   ward: string | null;
+  is_root_admin: boolean;
   is_active: boolean;
   is_email_verified: boolean;
   last_login_at: string | null;
@@ -127,6 +128,7 @@ export interface ReportStats {
   byStatus: Array<{ status: ReportStatus; count: string }>;
   byCategory: Array<{ category: IssueCategory; count: string }>;
   dailyTrend: Array<{ date: string; count: string }>;
+  byCounty: Array<{ county: string; count: string }>;
 }
 
 // ---------------------------------------------------------------------------

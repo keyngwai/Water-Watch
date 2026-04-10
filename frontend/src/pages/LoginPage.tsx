@@ -28,7 +28,7 @@ export function LoginPage() {
   return (
     <div style={authStyles.page}>
       <div style={authStyles.card}>
-        <div style={authStyles.logo}>💧</div>
+        {/* Logo removed */}
         <h1 style={authStyles.title}>Maji Watch</h1>
         <p style={authStyles.subtitle}>Sign in to your account</p>
         <form onSubmit={handleSubmit}>
@@ -88,7 +88,7 @@ export function RegisterPage() {
   return (
     <div style={authStyles.page}>
       <div style={{ ...authStyles.card, maxWidth: '440px' }}>
-        <div style={authStyles.logo}>💧</div>
+        {/* Logo removed */}
         <h1 style={authStyles.title}>Create Account</h1>
         <p style={authStyles.subtitle}>Join Maji Watch to report water issues in your community</p>
         <form onSubmit={handleSubmit}>

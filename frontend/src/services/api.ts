@@ -61,7 +61,7 @@ export const authApi = {
 
   createAdmin: async (data: {
     email: string; password: string; full_name: string;
-    phone?: string; county: string;
+    phone?: string; county?: string; is_root_admin?: boolean;
   }) => {
     const res = await api.post<ApiResponse<User>>('/auth/admin/create', data);
     return res.data.data;
@@ -157,8 +157,10 @@ export const reportsApi = {
     return normalizeReport(res.data.data);
   },
 
-  getStats: async (): Promise<ReportStats> => {
-    const res = await api.get<ApiResponse<ReportStats>>('/reports/admin/stats');
+  getStats: async (county?: string): Promise<ReportStats> => {
+    const res = await api.get<ApiResponse<ReportStats>>('/reports/admin/stats', {
+      params: county ? { county } : {},
+    });
     return res.data.data;
   },
 };
