@@ -29,7 +29,7 @@ export default function CitizenDashboard() {
       <div style={styles.welcome}>
         <div>
           <h1 style={styles.welcomeTitle}>
-            Hello, {user?.full_name?.split(' ')[0]} 👋
+            Hello, {user?.full_name?.split(' ')[0]}
           </h1>
           <p style={styles.welcomeText}>
             {user?.county ? `Reporting from ${user.county} County` : 'Track and manage your water issue reports'}
@@ -68,8 +68,7 @@ export default function CitizenDashboard() {
           <p style={{ color: '#94a3b8' }}>Loading your reports...</p>
         ) : reports.length === 0 ? (
           <div style={styles.empty}>
-            <div style={{ fontSize: '48px' }}>🚰</div>
-            <h3 style={{ color: '#475569', margin: '12px 0 8px' }}>No reports yet</h3>
+            <h3 style={{ color: '#475569', margin: '0 0 8px' }}>No reports yet</h3>
             <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
               Help your community by reporting water issues in your area.
             </p>
@@ -92,7 +91,7 @@ export default function CitizenDashboard() {
 
       {/* Info Banner */}
       <div style={styles.infoBanner}>
-        <span style={{ fontSize: '20px' }}>ℹ️</span>
+        <div style={{ fontSize: '20px', color: '#0f172a', marginRight: '10px' }}>Info</div>
         <div>
           <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>
             How Maji Watch Works

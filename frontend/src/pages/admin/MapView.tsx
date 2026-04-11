@@ -79,7 +79,7 @@ export default function AdminMapView() {
           ))}
         </div>
         <button onClick={handleRefresh} style={styles.refreshBtn}>
-          🔄 Refresh
+          Refresh
         </button>
         <span style={{ color: '#64748b', fontSize: '13px' }}>
           {reports.length} reports on map
@@ -111,12 +111,12 @@ export default function AdminMapView() {
       )}
 
       <div style={styles.mapLayout}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <ReportMap
             reports={reports}
             onReportSelect={setSelectedReport}
             selectedReport={selectedReport}
-            height="calc(100vh - 280px)"
+            height="calc(100vh - 220px)"
           />
         </div>
 
@@ -135,13 +135,13 @@ export default function AdminMapView() {
               <CategoryBadge category={selectedReport.category} />
             </div>
             <div style={styles.detailRow}>
-              <span style={styles.detailLabel}>📍 Location</span>
+              <span style={styles.detailLabel}>Location</span>
               <span style={styles.detailValue}>
                 {selectedReport.location_name || `${selectedReport.county}${selectedReport.sub_county ? `, ${selectedReport.sub_county}` : ''}`}
               </span>
             </div>
             <div style={styles.detailRow}>
-              <span style={styles.detailLabel}>🗓 Submitted</span>
+              <span style={styles.detailLabel}>Submitted</span>
               <span style={styles.detailValue}>
                 {new Date(selectedReport.created_at).toLocaleDateString('en-KE', {
                   day: 'numeric', month: 'short', year: 'numeric',
@@ -149,16 +149,16 @@ export default function AdminMapView() {
               </span>
             </div>
             <div style={styles.detailRow}>
-              <span style={styles.detailLabel}>👤 Citizen</span>
+              <span style={styles.detailLabel}>Citizen</span>
               <span style={styles.detailValue}>{selectedReport.citizen_name || '—'}</span>
             </div>
             <div style={styles.detailRow}>
-              <span style={styles.detailLabel}>👍 Upvotes</span>
+              <span style={styles.detailLabel}>Upvotes</span>
               <span style={styles.detailValue}>{selectedReport.upvote_count}</span>
             </div>
             {selectedReport.technician_name && (
               <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>🔧 Assigned</span>
+                <span style={styles.detailLabel}>Assigned</span>
                 <span style={styles.detailValue}>{selectedReport.technician_name}</span>
               </div>
             )}
@@ -203,7 +203,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     fontSize: '11px',
   },
-  mapLayout: { display: 'flex', gap: '16px' },
+  mapLayout: {
+    display: 'flex',
+    gap: '16px',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    minHeight: '70vh',
+  },
   sidebar: {
     width: '280px',
     flexShrink: 0,
@@ -212,7 +218,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #334155',
     padding: '20px',
     overflowY: 'auto',
-    maxHeight: 'calc(100vh - 280px)',
+    maxHeight: 'calc(100vh - 220px)',
   },
   sidebarHeader: {
     display: 'flex',

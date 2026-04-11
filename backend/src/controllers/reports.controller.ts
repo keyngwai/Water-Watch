@@ -114,11 +114,14 @@ export async function adminListReports(req: Request, res: Response, next: NextFu
       req.query.limit as string
     );
 
+    const userFilterData = req.user ? { county: req.user.county, is_root_admin: req.user.is_root_admin ?? false } : undefined;
+
     const { reports, meta } = await reportsService.adminListReports({
       page, limit, offset,
       status: req.query.status as never,
       category: req.query.category as never,
       county: req.query.county as string,  // Allow filtering by county if specified
+      user: userFilterData,
     });
 
     sendSuccess(res, reports, undefined, 200, meta);

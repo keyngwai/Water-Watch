@@ -46,6 +46,7 @@ export default function AdminDashboard() {
     full_name: '',
     phone: '',
     county: '',
+    is_root_admin: false,
   });
 
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
@@ -58,8 +59,8 @@ export default function AdminDashboard() {
   });
 
   const statsQuery = useQuery<ReportStats>({
-    queryKey: ['admin-stats', user?.id],
-    queryFn: () => reportsApi.getStats(),
+    queryKey: ['admin-stats', user?.id, user?.county, user?.is_root_admin],
+    queryFn: () => reportsApi.getStats(user?.is_root_admin ? undefined : (user?.county || undefined)),
     enabled: user?.role === 'admin',
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
@@ -93,9 +94,10 @@ export default function AdminDashboard() {
     }
   }, [recentReportsQuery.isError, recentReportsQuery.error]);
 
-  const { data: technicians } = useQuery({
-    queryKey: ['technicians', user?.id],
-    queryFn: () => techniciansApi.list(),
+  const { data: reportTechnicians } = useQuery({
+    queryKey: ['technicians', selectedReport?.county],
+    queryFn: () => selectedReport ? techniciansApi.list(selectedReport.county) : [],
+    enabled: !!selectedReport,
   });
 
   const createAdminMutation = useMutation({
@@ -103,7 +105,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success('Admin account created successfully!');
       setShowCreateAdmin(false);
-      setAdminForm({ email: '', password: '', full_name: '', phone: '', county: '' });
+      setAdminForm({ email: '', password: '', full_name: '', phone: '', county: '', is_root_admin: false });
     },
     onError: (err) => toast.error(getApiError(err)),
   });
@@ -144,13 +146,13 @@ export default function AdminDashboard() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={handleRefresh} style={styles.refreshBtn}>
-            🔄 Refresh
+            Refresh
           </button>
           <button onClick={() => setShowCreateAdmin(true)} style={styles.createAdminBtn}>
-            ➕ Create Admin
+            Create Admin
           </button>
           <button onClick={() => navigate('/admin/map')} style={styles.mapBtn}>
-            🗺 View Map
+            View Map
           </button>
         </div>
       </div>
@@ -158,10 +160,10 @@ export default function AdminDashboard() {
       {/* KPI Cards */}
       <div style={styles.kpiGrid}>
         {[
-          { label: 'Total Reports', value: totalReports, icon: '📋', color: '#0369a1', bg: '#eff6ff' },
-          { label: 'Pending Review', value: statusMap['reported'] || 0, icon: '🔔', color: '#d97706', bg: '#fffbeb' },
-          { label: 'In Progress', value: statusMap['in_progress'] || 0, icon: '🔧', color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Resolved', value: statusMap['resolved'] || 0, icon: '✅', color: '#059669', bg: '#ecfdf5' },
+          { label: 'Total Reports', value: totalReports, icon: '', color: '#0369a1', bg: '#eff6ff' },
+          { label: 'Pending Review', value: statusMap['reported'] || 0, icon: '', color: '#d97706', bg: '#fffbeb' },
+          { label: 'In Progress', value: statusMap['in_progress'] || 0, icon: '', color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Resolved', value: statusMap['resolved'] || 0, icon: '', color: '#059669', bg: '#ecfdf5' },
         ].map((kpi) => (
           <div key={kpi.label} style={{ ...styles.kpiCard, background: kpi.bg, borderColor: `${kpi.color}20` }}>
             <div style={styles.kpiIcon}>{kpi.icon}</div>
@@ -209,6 +211,40 @@ export default function AdminDashboard() {
               <span style={styles.categoryCount}>{parseInt(item.count).toLocaleString()}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div style={styles.twoCol}>
+        {/* Reports by County */}
+        <div style={styles.panel}>
+          <h3 style={styles.panelTitle}>Reports by County</h3>
+          {stats?.byCounty.slice(0, 10).map((item, i) => {
+            const count = parseInt(item.count);
+            const isUserCounty = user?.county === item.county;
+            return (
+              <div key={item.county} style={styles.countyRow}>
+                <span style={styles.countyRank}>#{i + 1}</span>
+                <span style={{
+                  flex: 1,
+                  fontSize: '13px',
+                  color: isUserCounty ? '#0369a1' : '#0f172a',
+                  fontWeight: isUserCounty ? 600 : 500
+                }}>
+                  {item.county}
+                  {isUserCounty && ' (Your County)'}
+                </span>
+                <span style={styles.countyCount}>{count.toLocaleString()}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Placeholder for future panel */}
+        <div style={styles.panel}>
+          <h3 style={styles.panelTitle}>Recent Activity</h3>
+          <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+            Activity feed coming soon...
+          </div>
         </div>
       </div>
 
@@ -324,14 +360,14 @@ export default function AdminDashboard() {
                 onChange={(e) => setAdminForm((f) => ({ ...f, phone: e.target.value }))}
               />
 
-              <label style={styles.label}>County *</label>
+              <label style={styles.label}>County{!adminForm.is_root_admin ? ' *' : ''}</label>
               <select
                 id="create-admin-county"
                 name="county"
                 style={styles.input}
                 value={adminForm.county}
                 onChange={(e) => setAdminForm((f) => ({ ...f, county: e.target.value }))}
-                required
+                required={!adminForm.is_root_admin}
               >
                 <option value="">Select county</option>
                 {KENYAN_COUNTIES.map((c) => (
@@ -340,6 +376,15 @@ export default function AdminDashboard() {
                   </option>
                 ))}
               </select>
+
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={adminForm.is_root_admin}
+                  onChange={(e) => setAdminForm((f) => ({ ...f, is_root_admin: e.target.checked, county: e.target.checked ? '' : f.county }))}
+                />
+                Root Admin (can see all counties)
+              </label>
 
               <label style={styles.label}>Password *</label>
               <input
@@ -395,10 +440,10 @@ export default function AdminDashboard() {
               onChange={(e) => setUpdateForm((f) => ({ ...f, status: e.target.value }))}
             >
               <option value="">Select status</option>
-              <option value="verified">✓ Verify Report</option>
-              <option value="in_progress">🔧 Mark In Progress</option>
-              <option value="resolved">✅ Mark Resolved</option>
-              <option value="rejected">✗ Reject Report</option>
+              <option value="verified">Verify report</option>
+              <option value="in_progress">Mark in progress</option>
+              <option value="resolved">Mark resolved</option>
+              <option value="rejected">Reject report</option>
             </select>
 
             {(updateForm.status === 'in_progress' || updateForm.status === 'verified') && (
@@ -410,7 +455,7 @@ export default function AdminDashboard() {
                   onChange={(e) => setUpdateForm((f) => ({ ...f, technician_id: e.target.value }))}
                 >
                   <option value="">— No assignment —</option>
-                  {technicians?.map((t: any) => (
+                  {reportTechnicians?.map((t: any) => (
                     <option key={t.id} value={t.id}>
                       {t.full_name} ({t.employee_id}) — {t.county}
                       {!t.is_available ? ' [BUSY]' : ''}
@@ -615,6 +660,22 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#38bdf8',
     background: '#0369a110',
+    padding: '2px 8px',
+    borderRadius: '20px',
+  },
+  countyRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '8px 0',
+    borderBottom: '1px solid #334155',
+  },
+  countyRank: { fontSize: '12px', color: '#64748b', width: '24px', flexShrink: 0 },
+  countyCount: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#10b981',
+    background: '#10b98110',
     padding: '2px 8px',
     borderRadius: '20px',
   },

@@ -37,6 +37,7 @@ export interface UserRow {
   county: string | null;
   sub_county: string | null;
   ward: string | null;
+  is_root_admin: boolean;
   is_active: boolean;
   is_email_verified: boolean;
   last_login_at: Date | null;
@@ -124,6 +125,8 @@ export interface JwtPayload {
   sub: string;   // user ID
   role: UserRole;
   email: string;
+  county: string | null;
+  is_root_admin: boolean;
   iat?: number;
   exp?: number;
 }

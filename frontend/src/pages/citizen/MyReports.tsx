@@ -2,27 +2,90 @@
 // MyReports.tsx
 // =========================================================================
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 import { ReportCard } from '../../components/shared/Badges';
-import { reportsApi } from '../../services/api';
+import { reportsApi, getApiError } from '../../services/api';
+import { useAuthStore } from '../../context/auth.store';
 import { Report, STATUS_LABELS } from '../../types';
 
 export default function MyReports() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [tab, setTab] = useState<'my-reports' | 'area-reports'>('my-reports');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['my-reports', status, page],
-    queryFn: () => reportsApi.getMyReports({ status: status || undefined, page, limit: 12 }),
+  const upvoteMutation = useMutation({
+    mutationFn: (reportId: string) => reportsApi.upvote(reportId),
+    onSuccess: () => {
+      toast.success('Report upvoted!');
+      queryClient.invalidateQueries({ queryKey: ['area-reports'] });
+    },
+    onError: (err) => toast.error(getApiError(err)),
   });
 
-  const reports = (data?.reports || []) as unknown as Report[];
+  const handleUpvote = (reportId: string) => {
+    upvoteMutation.mutate(reportId);
+  };
+
+  const { data: myData, isLoading: myLoading } = useQuery({
+    queryKey: ['my-reports', status, page],
+    queryFn: () => reportsApi.getMyReports({ status: status || undefined, page, limit: 12 }),
+    enabled: tab === 'my-reports',
+  });
+
+  const { data: areaData, isLoading: areaLoading } = useQuery({
+    queryKey: ['area-reports', user?.county, page],
+    queryFn: () => reportsApi.list({ county: user?.county || undefined, page, limit: 12 }),
+    enabled: tab === 'area-reports' && !!user?.county,
+  });
+
+  const reports = tab === 'my-reports' ? (myData?.reports || []) : (areaData?.reports || []) as unknown as Report[];
+  const isLoading = tab === 'my-reports' ? myLoading : areaLoading;
+  const data = tab === 'my-reports' ? myData : areaData;
 
   return (
-    <Layout title="My Reports">
+    <Layout title="Reports">
+      {/* Tab Selector */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+        <button
+          onClick={() => { setTab('my-reports'); setPage(1); setStatus(''); }}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            borderBottom: tab === 'my-reports' ? '2px solid #0369a1' : 'transparent',
+            background: 'transparent',
+            color: tab === 'my-reports' ? '#0369a1' : '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 600,
+          }}
+        >
+          My Reports
+        </button>
+        <button
+          onClick={() => { setTab('area-reports'); setPage(1); }}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            borderBottom: tab === 'area-reports' ? '2px solid #0369a1' : 'transparent',
+            background: 'transparent',
+            color: tab === 'area-reports' ? '#0369a1' : '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 600,
+          }}
+        >
+          Area Reports ({user?.county})
+        </button>
+      </div>
+
+      {/* Status Filters (only show for My Reports) */}
+      {tab === 'my-reports' && (
       <div style={mrStyles.filters}>
         {(['', 'reported', 'verified', 'in_progress', 'resolved', 'rejected'] as const).map((s) => (
           <button
@@ -47,6 +110,7 @@ export default function MyReports() {
           {data?.meta.total ?? 0} total
         </span>
       </div>
+      )}
 
       {isLoading ? (
         <p style={{ color: '#94a3b8', padding: '40px 0' }}>Loading...</p>
@@ -60,7 +124,13 @@ export default function MyReports() {
       ) : (
         <div style={mrStyles.grid}>
           {reports.map((r) => (
-            <ReportCard key={r.id} report={r} onClick={() => navigate(`/reports/${r.id}`)} />
+            <ReportCard
+              key={r.id}
+              report={r}
+              onClick={() => navigate(`/reports/${r.id}`)}
+              showUpvoteButton={tab === 'area-reports'}
+              onUpvote={tab === 'area-reports' ? handleUpvote : undefined}
+            />
           ))}
         </div>
       )}

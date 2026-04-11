@@ -58,7 +58,7 @@ export default function ReportDetail() {
   if (isLoading) {
     return (
       <div style={styles.loadingPage}>
-        <div style={styles.spinner}>💧</div>
+        <div style={styles.spinner}></div>
         <p style={{ color: '#64748b' }}>Loading report...</p>
       </div>
     );
@@ -100,16 +100,16 @@ export default function ReportDetail() {
             <p style={styles.description}>{r.description}</p>
 
             <div style={styles.metaGrid}>
-              <MetaItem label="📍 Location" value={r.location_name || `${r.county}${r.sub_county ? `, ${r.sub_county}` : ''}`} />
-              <MetaItem label="🗺 County" value={r.county} />
-              {r.ward && <MetaItem label="🏘 Ward" value={r.ward} />}
-              <MetaItem label="📅 Submitted" value={formatDistanceToNow(new Date(r.created_at), { addSuffix: true })} />
-              {r.resolved_at && <MetaItem label="✅ Resolved" value={formatDistanceToNow(new Date(r.resolved_at), { addSuffix: true })} />}
+              <MetaItem label="Location" value={r.location_name || `${r.county}${r.sub_county ? `, ${r.sub_county}` : ''}`} />
+              <MetaItem label="County" value={r.county} />
+              {r.ward && <MetaItem label="Ward" value={r.ward} />}
+              <MetaItem label="Submitted" value={formatDistanceToNow(new Date(r.created_at), { addSuffix: true })} />
+              {r.resolved_at && <MetaItem label="Resolved" value={formatDistanceToNow(new Date(r.resolved_at), { addSuffix: true })} />}
               {r.estimated_resolution_date && (
-                <MetaItem label="⏰ Est. Resolution" value={new Date(r.estimated_resolution_date).toLocaleDateString('en-KE')} />
+                <MetaItem label="Estimated resolution" value={new Date(r.estimated_resolution_date).toLocaleDateString('en-KE')} />
               )}
-              <MetaItem label="👁 Views" value={String(r.view_count)} />
-              <MetaItem label="📍 GPS" value={`${parseFloat(String(r.latitude)).toFixed(5)}, ${parseFloat(String(r.longitude)).toFixed(5)}`} />
+              <MetaItem label="Views" value={String(r.view_count)} />
+              <MetaItem label="GPS" value={`${parseFloat(String(r.latitude)).toFixed(5)}, ${parseFloat(String(r.longitude)).toFixed(5)}`} />
             </div>
 
             {/* Upvote Button (citizens only) */}
@@ -119,7 +119,7 @@ export default function ReportDetail() {
                 disabled={upvoteMutation.isPending}
                 style={styles.upvoteBtn}
               >
-                👍 Support this report ({r.upvote_count})
+                Support this report ({r.upvote_count})
               </button>
             )}
           </div>
@@ -151,7 +151,7 @@ export default function ReportDetail() {
             <div style={styles.card}>
               <h3 style={styles.sectionTitle}>Assigned Technician</h3>
               <div style={styles.techCard}>
-                <div style={styles.techIcon}>👷</div>
+                <div style={styles.techIcon}>T</div>
                 <div>
                   <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>
                     {r.technician?.full_name || 'Technician assigned'}

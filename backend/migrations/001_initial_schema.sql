@@ -50,9 +50,10 @@ CREATE TABLE users (
   full_name         VARCHAR(255) NOT NULL,
   password_hash     TEXT NOT NULL,
   role              user_role NOT NULL DEFAULT 'citizen',
-  county            VARCHAR(100),                    -- e.g., "Nairobi", "Mombasa"
+  county            VARCHAR(100),                    -- e.g., "Nairobi", "Mombasa" (optional for citizens, required for county admins)
   sub_county        VARCHAR(100),
   ward              VARCHAR(100),
+  is_root_admin     BOOLEAN NOT NULL DEFAULT FALSE,  -- Root admins can see all counties, county admins see only their county
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
   is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   last_login_at     TIMESTAMPTZ,

@@ -198,8 +198,8 @@ export default function AdminTechnicians() {
         <div style={styles.loading}>Loading technicians...</div>
       ) : technicians.length === 0 ? (
         <div style={styles.empty}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>👷</div>
-          <h3 style={{ color: '#94a3b8', margin: '0 0 8px' }}>No technicians registered</h3>
+          <div style={{ fontSize: '48px', marginBottom: '12px', color: '#94a3b8' }}>No technicians yet</div>
+          <h3 style={{ color: '#94a3b8', margin: '0 0 8px' }}>Register field technicians to begin assigning work</h3>
           <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
             Register field technicians to assign them to reports.
           </p>
@@ -226,12 +226,12 @@ export default function AdminTechnicians() {
               </div>
 
               <div style={styles.infoRows}>
-                <InfoRow label="📧 Email" value={tech.email} />
-                {tech.phone && <InfoRow label="📞 Phone" value={tech.phone} />}
-                <InfoRow label="🗺 County" value={tech.county} />
-                {tech.job_role && <InfoRow label="🪪 Job role" value={tech.job_role} />}
-                {tech.department && <InfoRow label="🏢 Department" value={tech.department} />}
-                {tech.specialization && <InfoRow label="🔧 Specialization" value={tech.specialization} />}
+                <InfoRow label="Email" value={tech.email} />
+                {tech.phone && <InfoRow label="Phone" value={tech.phone} />}
+                <InfoRow label="County" value={tech.county} />
+                {tech.job_role && <InfoRow label="Job role" value={tech.job_role} />}
+                {tech.department && <InfoRow label="Department" value={tech.department} />}
+                {tech.specialization && <InfoRow label="Specialization" value={tech.specialization} />}
               </div>
 
               <div style={styles.cardFooter}>
@@ -241,7 +241,7 @@ export default function AdminTechnicians() {
                   color: tech.is_available ? '#059669' : '#d97706',
                   borderColor: tech.is_available ? '#6ee7b7' : '#fcd34d',
                 }}>
-                  {tech.is_available ? '✓ Available' : '⏳ Busy'}
+                  {tech.is_available ? 'Available' : 'Busy'}
                 </div>
                 <div style={styles.assignCount}>
                   {Number(tech.active_assignments)} active job{Number(tech.active_assignments) !== 1 ? 's' : ''}
@@ -253,7 +253,7 @@ export default function AdminTechnicians() {
                 style={styles.deleteBtn}
                 title="Delete technician"
               >
-                🗑 Delete
+                Delete
               </button>
             </div>
           ))}

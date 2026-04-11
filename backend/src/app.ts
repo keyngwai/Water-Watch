@@ -71,7 +71,7 @@ if (process.env.NODE_ENV !== 'test') {
 // - `authLimiter` stricter limits on login/register to slow brute-force attempts
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again later.', code: 'RATE_LIMITED' },
@@ -161,6 +161,19 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT received. Shutting down gracefully...');
   await pool.end();
   process.exit(0);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log it
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  // Exit gracefully
+  process.exit(1);
 });
 
 startServer();

@@ -9,10 +9,10 @@ import { useAuthStore } from '../../context/auth.store';
 import { Report, ReportStatus, STATUS_LABELS } from '../../types';
 
 const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
-  { value: 'verified', label: '✓ Verify Report' },
-  { value: 'in_progress', label: '🔧 Mark In Progress' },
-  { value: 'resolved', label: '✅ Mark Resolved' },
-  { value: 'rejected', label: '✗ Reject Report' },
+  { value: 'verified', label: 'Verify report' },
+  { value: 'in_progress', label: 'Mark in progress' },
+  { value: 'resolved', label: 'Mark resolved' },
+  { value: 'rejected', label: 'Reject report' },
 ];
 
 function AssignTechnicianModal({
@@ -326,7 +326,7 @@ export default function AdminReports() {
           onChange={(e) => setFilter('county', e.target.value)}
         />
         <button onClick={handleRefresh} style={styles.refreshBtn}>
-          🔄 Refresh
+          Refresh
         </button>
         <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
           {data?.meta.total ?? 0} reports

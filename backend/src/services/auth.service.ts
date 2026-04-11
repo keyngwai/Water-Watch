@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { queryOne, query } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 import { UserRow, JwtPayload, UserRole } from '../types';
+import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
 // AuthService: Handles citizen registration, login for all roles.
@@ -47,12 +48,18 @@ export async function registerCitizen(input: RegisterInput): Promise<AuthResult>
     INSERT INTO users (email, password_hash, full_name, phone, role, county, sub_county, ward)
     VALUES ($1, $2, $3, $4, 'citizen', $5, $6, $7)
     RETURNING id, email, phone, full_name, role, county, sub_county, ward,
-              is_active, is_email_verified, last_login_at, created_at, updated_at
+              is_root_admin, is_active, is_email_verified, last_login_at, created_at, updated_at
   `, [input.email, passwordHash, input.full_name, input.phone ?? null,
       input.county ?? null, input.sub_county ?? null, input.ward ?? null]);
 
   const user = rows[0];
-  const token = signToken({ sub: user.id, role: user.role, email: user.email });
+  const token = signToken({
+    sub: user.id,
+    role: user.role,
+    email: user.email,
+    county: user.county,
+    is_root_admin: user.is_root_admin ?? false
+  });
 
   return { user, token };
 }
@@ -60,7 +67,7 @@ export async function registerCitizen(input: RegisterInput): Promise<AuthResult>
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
   const user = await queryOne<UserRow>(
     `SELECT id, email, phone, full_name, password_hash, role, county, sub_county, ward,
-            is_active, is_email_verified, last_login_at, created_at, updated_at
+            is_root_admin, is_active, is_email_verified, last_login_at, created_at, updated_at
      FROM users WHERE email = $1`,
     [input.email]
   );
@@ -83,7 +90,21 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
   // Update last login timestamp
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
-  const token = signToken({ sub: user.id, role: user.role, email: user.email });
+  logger.debug('Creating JWT token for user login', {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    county: user.county,
+    is_root_admin: user.is_root_admin,
+  });
+
+  const token = signToken({
+    sub: user.id,
+    role: user.role,
+    email: user.email,
+    county: user.county,
+    is_root_admin: user.is_root_admin ?? false
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password_hash, ...safeUser } = user;
@@ -93,7 +114,7 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 export async function getUserById(id: string): Promise<Omit<UserRow, 'password_hash'> | null> {
   return queryOne<Omit<UserRow, 'password_hash'>>(
     `SELECT id, email, phone, full_name, role, county, sub_county, ward,
-            is_active, is_email_verified, last_login_at, created_at, updated_at
+            is_root_admin, is_active, is_email_verified, last_login_at, created_at, updated_at
      FROM users WHERE id = $1`,
     [id]
   );
@@ -103,7 +124,7 @@ export async function getUserById(id: string): Promise<Omit<UserRow, 'password_h
 // Admin user creation (internal, called during seeding or by super-admin)
 // ---------------------------------------------------------------------------
 export async function createAdminUser(
-  input: RegisterInput & { role: UserRole }
+  input: RegisterInput & { role: UserRole; is_root_admin?: boolean }
 ): Promise<Omit<UserRow, 'password_hash'>> {
   const existing = await queryOne<UserRow>('SELECT id FROM users WHERE email = $1', [input.email]);
   if (existing) {
@@ -113,11 +134,11 @@ export async function createAdminUser(
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
   const rows = await query<Omit<UserRow, 'password_hash'>>(`
-    INSERT INTO users (email, password_hash, full_name, phone, role, county, is_email_verified)
-    VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+    INSERT INTO users (email, password_hash, full_name, phone, role, county, is_root_admin, is_email_verified)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
     RETURNING id, email, phone, full_name, role, county, sub_county, ward,
-              is_active, is_email_verified, last_login_at, created_at, updated_at
-  `, [input.email, passwordHash, input.full_name, input.phone ?? null, input.role, input.county ?? null]);
+              is_root_admin, is_active, is_email_verified, last_login_at, created_at, updated_at
+  `, [input.email, passwordHash, input.full_name, input.phone ?? null, input.role, input.county ?? null, input.is_root_admin ?? false]);
 
   return rows[0];
 }

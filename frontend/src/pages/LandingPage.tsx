@@ -7,7 +7,7 @@ export default function LandingPage() {
   return (
     <div style={ls.page}>
       <nav style={ls.nav}>
-        <span style={ls.brand}>💧 Maji Watch</span>
+        <span style={ls.brand}>Maji Watch</span>
         <div style={{ display: 'flex', gap: '12px' }}>
           <Link to="/login" style={ls.navLink}>Sign In</Link>
           <Link to="/register" style={{ ...ls.navLink, background: '#0369a1', color: 'white', borderRadius: '8px', padding: '8px 16px' }}>
@@ -18,14 +18,14 @@ export default function LandingPage() {
 
       <div style={ls.hero}>
         <div style={ls.heroText}>
-          <div style={ls.badge}>🇰🇪 Built for Kenya's 47 Counties</div>
+          <div style={ls.badge}>Built for Kenya's 47 counties</div>
           <h1 style={ls.heroTitle}>Clean Water.<br />Reported. Verified. Fixed.</h1>
           <p style={ls.heroSubtitle}>
             Maji Watch empowers Kenyan communities to report water access issues
             directly to county water authorities — with full transparency and accountability.
           </p>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/register" style={ls.ctaPrimary}>Report an Issue →</Link>
+            <Link to="/register" style={ls.ctaPrimary}>Report an Issue</Link>
             <Link to="/login" style={ls.ctaSecondary}>County Authority Login</Link>
           </div>
         </div>
@@ -47,12 +47,12 @@ export default function LandingPage() {
 
       <div style={ls.features}>
         {[
-          { icon: '📍', title: 'GPS Location', desc: 'Pinpoint the exact location of water issues on an interactive map' },
-          { icon: '📸', title: 'Photo Evidence', desc: 'Attach photos for faster verification and better documentation' },
-          { icon: '🔔', title: 'Status Tracking', desc: 'Follow your report from submission to resolution in real-time' },
-          { icon: '👷', title: 'Technician Dispatch', desc: 'Admins assign qualified technicians directly from the platform' },
-          { icon: '📊', title: 'Data Transparency', desc: 'Public dashboard shows county-wide water issue trends' },
-          { icon: '🔒', title: 'Secure & Private', desc: 'JWT authentication with role-based access control' },
+          { icon: 'Location', title: 'GPS Location', desc: 'Pinpoint the exact location of water issues on an interactive map' },
+          { icon: 'Photo', title: 'Photo Evidence', desc: 'Attach photos for faster verification and better documentation' },
+          { icon: 'Status', title: 'Status Tracking', desc: 'Follow your report from submission to resolution in real-time' },
+          { icon: 'Dispatch', title: 'Technician Dispatch', desc: 'Admins assign qualified technicians directly from the platform' },
+          { icon: 'Data', title: 'Data Transparency', desc: 'Public dashboard shows county-wide water issue trends' },
+          { icon: 'Secure', title: 'Secure & Private', desc: 'JWT authentication with role-based access control' },
         ].map((f) => (
           <div key={f.title} style={ls.featureCard}>
             <div style={ls.featureIcon}>{f.icon}</div>

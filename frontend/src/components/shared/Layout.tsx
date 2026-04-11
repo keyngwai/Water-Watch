@@ -21,7 +21,6 @@ const CitizenNav = () => {
   return (
     <nav style={styles.nav}>
       <Link to="/dashboard" style={styles.brand}>
-        <span style={styles.brandIcon}>💧</span>
         <span style={styles.brandText}>Maji Watch</span>
       </Link>
       <div style={styles.navLinks}>
@@ -57,16 +56,15 @@ const AdminNav = () => {
   const navigate = useNavigate();
 
   const links = [
-    { to: '/admin', label: '⬛ Overview' },
-    { to: '/admin/reports', label: '📋 Reports' },
-    { to: '/admin/map', label: '🗺 Map View' },
-    { to: '/admin/technicians', label: '👷 Technicians' },
+    { to: '/admin', label: 'Overview' },
+    { to: '/admin/reports', label: 'Reports' },
+    { to: '/admin/map', label: 'Map View' },
+    { to: '/admin/technicians', label: 'Technicians' },
   ];
 
   return (
     <nav style={{ ...styles.nav, background: '#0f172a', borderColor: '#1e293b' }}>
       <Link to="/admin" style={styles.brand}>
-        <span style={styles.brandIcon}>💧</span>
         <span style={{ ...styles.brandText, color: '#38bdf8' }}>Maji Watch Admin</span>
       </Link>
       <div style={styles.navLinks}>
