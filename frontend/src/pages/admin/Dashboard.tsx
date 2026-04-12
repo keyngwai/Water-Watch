@@ -742,3 +742,16 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
   },
 };
+
+// Responsive adjustments for mobile
+if (window.innerWidth <= 700) {
+  styles.header.flexDirection = 'column';
+  styles.kpiGrid.gridTemplateColumns = '1fr 1fr';
+  styles.twoCol.gridTemplateColumns = '1fr';
+  styles.modal.padding = '16px';
+  styles.modal.borderRadius = '12px';
+  styles.panel.padding = '10px';
+  styles.panel.borderRadius = '8px';
+  styles.title.fontSize = '20px';
+  styles.modalTitle.fontSize = '18px';
+}

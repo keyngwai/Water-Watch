@@ -1,3 +1,47 @@
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
+// Password Reset Token Table (add to DB if not present):
+// CREATE TABLE password_resets (
+//   id SERIAL PRIMARY KEY,
+//   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+//   token VARCHAR(255) NOT NULL,
+//   expires_at TIMESTAMP NOT NULL,
+//   used BOOLEAN DEFAULT FALSE,
+//   created_at TIMESTAMP DEFAULT NOW()
+// );
+
+// Send password reset email
+export async function sendPasswordResetEmail(email: string, frontendResetUrl: string): Promise<void> {
+  const user = await queryOne<UserRow>('SELECT id, email, full_name FROM users WHERE email = $1', [email]);
+  if (!user) return; // Do not reveal if user exists
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 1000 * 60 * 30); // 30 min
+  await query('INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)', [user.id, token, expires]);
+  const resetLink = `${frontendResetUrl}?token=${token}`;
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT || '587'),
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: 'Maji Watch Password Reset',
+      text: `Hi ${user.full_name},\n\nTo reset your password, click the link below (valid for 30 minutes):\n${resetLink}\n\nIf you did not request this, ignore this email.`,
+      html: `<p>Hi ${user.full_name},</p><p>To reset your password, click the link below (valid for 30 minutes):</p><p><a href="${resetLink}">${resetLink}</a></p><p>If you did not request this, ignore this email.</p>`,
+    });
+    logger.info(`Password reset email sent to ${user.email}`);
+  } catch (err) {
+    logger.error('Failed to send password reset email', { error: err instanceof Error ? err.message : err });
+    throw err;
+  }
+}
+
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { queryOne, query } from '../config/database';

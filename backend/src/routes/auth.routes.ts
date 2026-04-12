@@ -3,6 +3,7 @@ import * as authController from '../controllers/auth.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { authValidation, validate } from '../middlewares/validation.middleware';
 
+
 const router = Router();
 
 /**
@@ -28,5 +29,6 @@ router.get('/me', authenticate, authController.getMe);
  * Admin creates a new admin account
  */
 router.post('/admin/create', authenticate, authorize('admin'), authValidation.createAdmin, validate, authController.createAdmin);
+
 
 export default router;

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-oxc'
 
 export default defineConfig({
   plugins: [react()],
@@ -19,13 +19,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          query: ['@tanstack/react-query'],
-          map: ['leaflet', 'react-leaflet'],
+        manualChunks(id) {
+          if (id.includes('react') && !id.includes('react-query')) return 'react';
+          if (id.includes('react-router-dom')) return 'router';
+          if (id.includes('@tanstack/react-query')) return 'query';
+          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'map';
         },
       },
     },

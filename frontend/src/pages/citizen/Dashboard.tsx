@@ -175,3 +175,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'flex-start',
   },
 };
+
+// Responsive adjustments for mobile
+if (window.innerWidth <= 700) {
+  styles.welcome.flexDirection = 'column';
+  styles.statsRow.gridTemplateColumns = '1fr 1fr';
+  styles.reportGrid.gridTemplateColumns = '1fr';
+  styles.empty.padding = '32px 10px';
+  styles.infoBanner.flexDirection = 'column';
+  styles.infoBanner.padding = '14px';
+}

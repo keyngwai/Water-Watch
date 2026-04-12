@@ -11,6 +11,8 @@ import { pool, dbHealthCheck } from './config/database';
 import { logger } from './utils/logger';
 import { globalErrorHandler, notFound } from './middlewares/error.middleware';
 
+
+
 // Routes
 import authRoutes from './routes/auth.routes';
 import reportsRoutes from './routes/reports.routes';
@@ -20,6 +22,8 @@ import techniciansRoutes from './routes/technicians.routes';
 // Application Factory
 // ---------------------------------------------------------------------------
 const app = express();
+
+
 
 // ---------------------------------------------------------------------------
 // Security Headers (Helmet sets sensible defaults)
