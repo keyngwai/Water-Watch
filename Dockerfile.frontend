@@ -1,0 +1,15 @@
+# Dockerfile for Frontend (Vite + React)
+FROM node:20-alpine as build
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Serve with static server
+FROM node:20-alpine as prod
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=build /app/dist ./dist
+EXPOSE 4173
+CMD ["serve", "-s", "dist", "-l", "4173"]
