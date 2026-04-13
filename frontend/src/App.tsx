@@ -1,4 +1,9 @@
 import { useEffect } from 'react';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+const socket = io('http://localhost:3001', {
+  withCredentials: true,
+});
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -31,6 +36,14 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 
 }
 
 export default function App() {
+    useEffect(() => {
+      socket.on('new_report', (data) => {
+        toast.success(`New report submitted: ${data.reference_code || data.title || 'Report'}`);
+      });
+      return () => {
+        socket.off('new_report');
+      };
+    }, []);
   const initFromStorage = useAuthStore((s) => s.initFromStorage);
 
   useEffect(() => {

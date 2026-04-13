@@ -58,6 +58,8 @@ export function LoginPage() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+          <p style={{ textAlign: 'center', margin: '10px 0 0 0' }}>
+          </p>
         <p style={authStyles.link}>
           Don't have an account? <Link to="/register" style={{ color: '#0369a1' }}>Register</Link>
         </p>
@@ -141,7 +143,14 @@ const authStyles: Record<string, React.CSSProperties> = {
     width: '100%',
     maxWidth: '400px',
     boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
+    boxSizing: 'border-box',
   },
+  // Responsive adjustments
+  if (window.innerWidth <= 600) {
+    authStyles.card.padding = '18px';
+    authStyles.card.borderRadius = '12px';
+    authStyles.title.fontSize = '20px';
+  }
   logo: { fontSize: '48px', textAlign: 'center', marginBottom: '12px' },
   title: { fontSize: '26px', fontWeight: 800, textAlign: 'center', color: '#0369a1', margin: '0 0 6px', letterSpacing: '-0.5px' },
   subtitle: { fontSize: '14px', color: '#64748b', textAlign: 'center', marginBottom: '28px' },

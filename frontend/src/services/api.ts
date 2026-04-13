@@ -6,7 +6,7 @@ import { ApiResponse, Report, User, Technician, ReportStats, PaginationMeta } fr
 // ---------------------------------------------------------------------------
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -53,6 +53,7 @@ export const authApi = {
     const res = await api.post<ApiResponse<{ user: User; token: string }>>('/auth/login', { email, password });
     return res.data.data;
   },
+
 
   getMe: async (): Promise<User> => {
     const res = await api.get<ApiResponse<User>>('/auth/me');

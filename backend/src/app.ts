@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import http from 'http';
+import { initSocket } from './utils/socket';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -11,6 +13,8 @@ import { pool, dbHealthCheck } from './config/database';
 import { logger } from './utils/logger';
 import { globalErrorHandler, notFound } from './middlewares/error.middleware';
 
+
+
 // Routes
 import authRoutes from './routes/auth.routes';
 import reportsRoutes from './routes/reports.routes';
@@ -20,6 +24,9 @@ import techniciansRoutes from './routes/technicians.routes';
 // Application Factory
 // ---------------------------------------------------------------------------
 const app = express();
+const server = http.createServer(app);
+
+
 
 // ---------------------------------------------------------------------------
 // Security Headers (Helmet sets sensible defaults)
@@ -138,12 +145,13 @@ async function startServer(): Promise<void> {
     logger.info('Database connection established.');
 
     // Start listening only after DB is healthy; avoids "half-deployed" behavior.
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       logger.info(`Maji Watch API running on port ${PORT}`, {
         env: process.env.NODE_ENV,
         port: PORT,
       });
     });
+    initSocket(server);
   } catch (err) {
     logger.error('Server startup failed', { error: (err as Error).message });
     process.exit(1);
@@ -179,3 +187,4 @@ process.on('uncaughtException', (error) => {
 startServer();
 
 export default app;
+export { server };

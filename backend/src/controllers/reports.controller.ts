@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as reportsService from '../services/reports.service';
 import { saveReportImages, deleteReportImage } from '../services/upload.service';
+import { emitNotification } from '../utils/socket';
 import { sendSuccess, sendCreated, parsePagination } from '../utils/response';
 
 // ---------------------------------------------------------------------------
@@ -25,6 +26,7 @@ export async function createReport(req: Request, res: Response, next: NextFuncti
       images = await saveReportImages(report.id, files);
     }
 
+    emitNotification('new_report', { ...report, images });
     sendCreated(res, { ...report, images }, `Report ${report.reference_code} submitted successfully.`);
   } catch (err) {
     next(err);

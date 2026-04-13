@@ -354,7 +354,7 @@ export default function AdminReports() {
                   </td>
                   <td style={styles.td}>
                     <span
-                      style={{ fontSize: '13px', fontWeight: 500, color: '#e2e8f0', cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ fontSize: '13px', fontWeight: 500, color: '#fff', cursor: 'pointer', textDecoration: 'underline' }}
                       onClick={() => navigate(`/reports/${report.id}`)}
                     >
                       {report.title.length > 40 ? report.title.substring(0, 40) + '...' : report.title}
