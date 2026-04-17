@@ -181,10 +181,11 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '16px',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
     gap: '12px',
   },
-  filterGroup: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+  filterGroup: { display: 'flex', gap: '8px', flexWrap: 'nowrap' },
   filterBtn: {
     padding: '6px 14px',
     borderRadius: '20px',
@@ -196,6 +197,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '6px',
     transition: 'all 0.15s',
+    whiteSpace: 'nowrap',
   },
   count: {
     background: 'rgba(255,255,255,0.2)',
@@ -272,5 +274,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
+    whiteSpace: 'nowrap',
   },
 };

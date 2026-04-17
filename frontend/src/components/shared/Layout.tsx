@@ -16,6 +16,7 @@ const CitizenNav = () => {
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/report/new', label: 'Report Issue' },
     { to: '/my-reports', label: 'My Reports' },
+    { to: '/help', label: 'Help & FAQ' },
   ];
 
   return (
@@ -60,20 +61,22 @@ const AdminNav = () => {
     { to: '/admin/reports', label: 'Reports' },
     { to: '/admin/map', label: 'Map View' },
     { to: '/admin/technicians', label: 'Technicians' },
+    { to: '/admin/help', label: 'Help & FAQ' },
   ];
 
   return (
-    <nav style={{ ...styles.nav, background: '#0f172a', borderColor: '#1e293b' }}>
-      <Link to="/admin" style={styles.brand}>
-        <span style={{ ...styles.brandText, color: '#38bdf8' }}>Maji Watch Admin</span>
+    <nav style={{ ...styles.nav, ...styles.adminNav }}>
+      <Link to="/admin" style={{ ...styles.brand, ...styles.adminBrand }}>
+        <span style={{ ...styles.brandText, ...styles.adminBrandText }}>Maji Admin</span>
       </Link>
-      <div style={styles.navLinks}>
+      <div style={{ ...styles.navLinks, ...styles.adminNavLinks }}>
         {links.map((l) => (
           <Link
             key={l.to}
             to={l.to}
             style={{
               ...styles.navLink,
+              ...styles.adminNavLink,
               color: location.pathname === l.to ? '#38bdf8' : '#94a3b8',
               ...(location.pathname === l.to ? { borderBottom: '2px solid #38bdf8' } : {}),
             }}
@@ -82,12 +85,14 @@ const AdminNav = () => {
           </Link>
         ))}
       </div>
-      <button
-        onClick={() => { logout(); navigate('/login'); }}
-        style={{ ...styles.logoutBtn, background: '#1e293b', color: '#94a3b8' }}
-      >
-        Sign out
-      </button>
+      <div style={styles.adminActions}>
+        <button
+          onClick={() => { logout(); navigate('/login'); }}
+          style={{ ...styles.logoutBtn, ...styles.adminLogoutBtn }}
+        >
+          Sign out
+        </button>
+      </div>
     </nav>
   );
 };
@@ -100,7 +105,7 @@ export default function Layout({ children, title }: LayoutProps) {
     <div style={isAdmin ? styles.adminWrapper : styles.wrapper}>
       {isAdmin ? <AdminNav /> : <CitizenNav />}
       <main style={styles.main}>
-        {title && <h1 style={styles.pageTitle}>{title}</h1>}
+        {title && <h1 style={{ ...styles.pageTitle, color: isAdmin ? '#e2e8f0' : '#0f172a' }}>{title}</h1>}
         {children}
       </main>
     </div>
@@ -123,8 +128,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 24px',
-    height: '64px',
+    padding: '10px 20px',
+    minHeight: '62px',
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
     position: 'sticky',
@@ -146,10 +151,36 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#0369a1',
     letterSpacing: '-0.3px',
   },
+  adminNav: {
+    background: '#0f172a',
+    borderColor: '#1e293b',
+    padding: '6px 12px',
+    minHeight: '48px',
+    gap: '8px',
+    flexWrap: 'nowrap',
+  },
+  adminBrand: {
+    marginRight: '6px',
+  },
+  adminBrandText: {
+    color: '#38bdf8',
+    fontSize: '13px',
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  },
   navLinks: {
     display: 'flex',
     alignItems: 'center',
+    gap: '6px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  adminNavLinks: {
+    flex: 1,
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
     gap: '4px',
+    overflowX: 'auto',
   },
   navLink: {
     padding: '8px 16px',
@@ -160,6 +191,17 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '8px',
     transition: 'all 0.15s',
     borderBottom: '2px solid transparent',
+  },
+  adminNavLink: {
+    padding: '4px 7px',
+    fontSize: '11px',
+    borderRadius: '6px',
+    whiteSpace: 'nowrap',
+  },
+  adminActions: {
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   navLinkActive: {
     color: '#0369a1',
@@ -177,19 +219,28 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
   },
   logoutBtn: {
-    padding: '6px 14px',
+    padding: '4px 10px',
     background: '#f1f5f9',
     border: '1px solid #e2e8f0',
-    borderRadius: '8px',
+    borderRadius: '7px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#475569',
-    fontWeight: 500,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+  },
+  adminLogoutBtn: {
+    background: '#1e293b',
+    color: '#94a3b8',
+    borderColor: '#334155',
+    padding: '3px 8px',
+    fontSize: '11px',
+    flexShrink: 0,
   },
   main: {
     maxWidth: '1280px',
     margin: '0 auto',
-    padding: '32px 24px',
+    padding: '28px 24px 36px',
   },
   pageTitle: {
     fontSize: '28px',
@@ -199,3 +250,4 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '-0.5px',
   },
 };
+

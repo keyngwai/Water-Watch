@@ -30,9 +30,9 @@ function AssignTechnicianModal({
   const [isPublic, setIsPublic] = useState(false);
 
   const { data: technicians } = useQuery({
-    // Keep technician choices limited to the report's county.
-    queryKey: ['technicians', report.county],
-    queryFn: () => techniciansApi.list(report.county),
+    // Load all technicians to avoid county-label mismatch blocking assignment.
+    queryKey: ['technicians', 'all-for-assignment'],
+    queryFn: () => techniciansApi.list(),
   });
 
   const mutation = useMutation({
@@ -233,19 +233,30 @@ function UpdateStatusModal({
   );
 }
 
+
 export default function AdminReports() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
 
-  const [filters, setFilters] = useState({ status: '', category: '', county: '', page: 1 });
+  const [filters, setFilters] = useState({ status: '', category: '', county: '', page: 1, start_date: '', end_date: '' });
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [assignmentReport, setAssignmentReport] = useState<Report | null>(null);
+  const invalidDateRange = Boolean(filters.start_date && filters.end_date && filters.start_date > filters.end_date);
+
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-reports', filters],
-    queryFn: () => reportsApi.adminList({ ...filters, limit: 25 }),
-    enabled: user?.role === 'admin',
+    queryFn: () => reportsApi.adminList({
+      ...filters,
+      status: filters.status || undefined,
+      category: filters.category || undefined,
+      county: filters.county || undefined,
+      start_date: filters.start_date || undefined,
+      end_date: filters.end_date || undefined,
+      limit: 25,
+    }),
+    enabled: user?.role === 'admin' && !invalidDateRange,
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   });
@@ -257,6 +268,8 @@ export default function AdminReports() {
   };
 
   const setFilter = (key: string, val: string) => setFilters((f) => ({ ...f, [key]: val, page: 1 }));
+  const setDateFilter = (key: 'start_date' | 'end_date', val: string) => setFilters((f) => ({ ...f, [key]: val, page: 1 }));
+  const clearDateFilters = () => setFilters((f) => ({ ...f, start_date: '', end_date: '', page: 1 }));
 
   if (!user) {
     return (
@@ -290,6 +303,39 @@ export default function AdminReports() {
 
   return (
     <Layout title="All Reports">
+      <div style={styles.topBar}>
+        <h2 style={styles.sectionTitle}>Manage Reports</h2>
+      </div>
+
+      {/* Date + quick filters */}
+      <div style={styles.filterCard}>
+        <div style={styles.dateFilters}>
+          <label style={styles.dateLabel}>
+            From
+            <input
+              type="date"
+              value={filters.start_date}
+              onChange={(e) => setDateFilter('start_date', e.target.value)}
+              style={styles.dateInput}
+            />
+          </label>
+          <label style={styles.dateLabel}>
+            To
+            <input
+              type="date"
+              value={filters.end_date}
+              onChange={(e) => setDateFilter('end_date', e.target.value)}
+              style={styles.dateInput}
+            />
+          </label>
+          <button onClick={clearDateFilters} style={styles.clearBtn}>
+            Clear dates
+          </button>
+        </div>
+        {invalidDateRange && (
+          <div style={styles.errorText}>Start date cannot be after end date.</div>
+        )}
+      </div>
       {selectedReport && (
         <UpdateStatusModal
           report={selectedReport}
@@ -437,12 +483,74 @@ export default function AdminReports() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  topBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '14px',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: '22px',
+    fontWeight: 700,
+    color: '#e2e8f0',
+    letterSpacing: '-0.3px',
+  },
+  filterCard: {
+    background: '#111827',
+    border: '1px solid #334155',
+    borderRadius: '12px',
+    padding: '14px',
+    marginBottom: '14px',
+  },
+  dateFilters: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'end',
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
+  },
+  dateLabel: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    color: '#94a3b8',
+    fontSize: '12px',
+    fontWeight: 600,
+  },
+  dateInput: {
+    padding: '8px 10px',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+    background: '#1e293b',
+    color: '#e2e8f0',
+    fontSize: '13px',
+    minWidth: '170px',
+  },
+  clearBtn: {
+    padding: '8px 12px',
+    background: 'transparent',
+    border: '1px solid #475569',
+    borderRadius: '8px',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 600,
+  },
+  errorText: {
+    color: '#fca5a5',
+    fontSize: '12px',
+    marginTop: '8px',
+  },
   filters: {
     display: 'flex',
     gap: '12px',
     alignItems: 'center',
     marginBottom: '20px',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
   },
   filterSelect: {
     padding: '8px 12px',
@@ -484,7 +592,7 @@ const styles: Record<string, React.CSSProperties> = {
   row: { borderBottom: '1px solid #1e293b60' },
   td: { padding: '12px 14px', verticalAlign: 'middle' },
   actionBtn: {
-    padding: '5px 12px',
+    padding: '6px 10px',
     background: '#0369a1',
     color: 'white',
     border: 'none',
@@ -495,7 +603,7 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   assignBtn: {
-    padding: '5px 12px',
+    padding: '6px 10px',
     background: '#334155',
     color: '#e2e8f0',
     border: '1px solid #475569',
@@ -509,6 +617,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: '8px',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   pagination: { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center', padding: '16px' },
   pageBtn: {
@@ -624,3 +733,26 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
   },
 };
+
+// Responsive adjustments for smaller screens
+if (window.innerWidth <= 900) {
+  styles.topBar.alignItems = 'stretch';
+  styles.sectionTitle.fontSize = '20px';
+
+  styles.filterCard.position = 'sticky';
+  styles.filterCard.top = '72px';
+  styles.filterCard.zIndex = 20;
+  styles.filterCard.background = '#111827f2';
+  styles.filterCard.backdropFilter = 'blur(4px)';
+
+  styles.dateFilters.flexWrap = 'nowrap';
+  styles.dateFilters.overflowX = 'auto';
+  styles.filters.flexWrap = 'nowrap';
+  styles.filters.overflowX = 'auto';
+
+  styles.table.minWidth = '760px';
+  styles.th.padding = '10px 10px';
+  styles.td.padding = '10px 10px';
+  styles.actionGroup.flexDirection = 'row';
+  styles.actionGroup.alignItems = 'center';
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -38,6 +38,9 @@ export default function AdminDashboard() {
       </Layout>
     );
   }
+
+  // --- Help Button ---
+  const helpBtnStyle: CSSProperties = { position: 'absolute', top: 24, right: 32, zIndex: 10 };
 
   const [showCreateAdmin, setShowCreateAdmin] = useState(false);
   const [adminForm, setAdminForm] = useState({
@@ -137,6 +140,13 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
+      <button
+        style={helpBtnStyle}
+        onClick={() => navigate('/admin/help')}
+        title="Admin Help & FAQ"
+      >
+        ❓ Help & FAQ
+      </button>
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>County Water Authority Dashboard</h1>

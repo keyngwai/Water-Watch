@@ -26,6 +26,13 @@ export default function CitizenDashboard() {
 
   return (
     <Layout>
+      <button
+        style={{ position: 'absolute', top: 24, right: 32, zIndex: 10 }}
+        onClick={() => navigate('/help')}
+        title="Help & FAQ"
+      >
+        ❓ Help & FAQ
+      </button>
       <div style={styles.welcome}>
         <div>
           <h1 style={styles.welcomeTitle}>

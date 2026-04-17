@@ -32,6 +32,8 @@ export interface ListReportsOptions {
   status?: ReportStatus;
   category?: IssueCategory;
   county?: string;
+  start_date?: string;
+  end_date?: string;
   citizen_id?: string;    // For citizens to see their own reports
   lat?: number;           // For proximity search
   lng?: number;
@@ -214,6 +216,16 @@ export async function adminListReports(
   if (opts.status) { conditions.push(`r.status = $${paramIdx++}`); params.push(opts.status); }
   if (opts.category) { conditions.push(`r.category = $${paramIdx++}`); params.push(opts.category); }
   if (opts.county) { conditions.push(`r.county ILIKE $${paramIdx++}`); params.push(`%${opts.county}%`); }
+  if (opts.start_date) {
+    // Compare at DATE granularity to avoid timezone edge-cases.
+    conditions.push(`r.created_at >= $${paramIdx++}::date`);
+    params.push(opts.start_date);
+  }
+  if (opts.end_date) {
+    // Include the full end date by using the next day as an exclusive upper bound.
+    conditions.push(`r.created_at < ($${paramIdx++}::date + INTERVAL '1 day')`);
+    params.push(opts.end_date);
+  }
 
   // County admin restriction: only see reports from their county
   if (opts.user && !opts.user.is_root_admin && opts.user.county) {

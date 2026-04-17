@@ -21,6 +21,8 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminReports from './pages/admin/Reports';
 import AdminMapView from './pages/admin/MapView';
 import AdminTechnicians from './pages/admin/Technicians';
+import AdminFAQ from './pages/admin/FAQ';
+import CitizenFAQ from './pages/citizen/FAQ';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +84,7 @@ export default function App() {
           <Route path="/my-reports" element={
             <ProtectedRoute role="citizen"><MyReports /></ProtectedRoute>
           } />
+          <Route path="/help" element={<CitizenFAQ />} />
 
           {/* Admin */}
           <Route path="/admin" element={
@@ -96,6 +99,7 @@ export default function App() {
           <Route path="/admin/technicians" element={
             <ProtectedRoute role="admin"><AdminTechnicians /></ProtectedRoute>
           } />
+          <Route path="/admin/help" element={<AdminFAQ />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -123,6 +123,8 @@ export async function adminListReports(req: Request, res: Response, next: NextFu
       status: req.query.status as never,
       category: req.query.category as never,
       county: req.query.county as string,  // Allow filtering by county if specified
+      start_date: req.query.start_date as string,
+      end_date: req.query.end_date as string,
       user: userFilterData,
     });
 
