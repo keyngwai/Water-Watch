@@ -26,26 +26,29 @@ export default function CitizenDashboard() {
 
   return (
     <Layout>
-      <button
-        style={{ position: 'absolute', top: 24, right: 32, zIndex: 10 }}
-        onClick={() => navigate('/help')}
-        title="Help & FAQ"
-      >
-        ❓ Help & FAQ
-      </button>
-      <div style={styles.welcome}>
-        <div>
-          <h1 style={styles.welcomeTitle}>
-            Hello, {user?.full_name?.split(' ')[0]}
-          </h1>
-          <p style={styles.welcomeText}>
-            {user?.county ? `Reporting from ${user.county} County` : 'Track and manage your water issue reports'}
-          </p>
-        </div>
-        <button onClick={() => navigate('/report/new')} style={styles.reportBtn}>
-          + Report Issue
-        </button>
-      </div>
+     
+     <div style={styles.welcome}>
+  <div>
+    <h1 style={styles.welcomeTitle}>
+      Hello, {user?.full_name?.split(' ')[0]}
+    </h1>
+    <p style={styles.welcomeText}>
+      {user?.county
+        ? `Reporting from ${user.county} County`
+        : 'Track and manage your water issue reports'}
+    </p>
+  </div>
+
+  {/* RIGHT SIDE WRAPPER */}
+  <div style={styles.welcomeActions}>
+    <button
+      onClick={() => navigate('/report/new')}
+      style={styles.reportBtn}
+    >
+      + Report
+    </button>
+  </div>
+</div>
 
       {/* Quick Stats */}
       <div style={styles.statsRow}>
@@ -64,12 +67,19 @@ export default function CitizenDashboard() {
 
       {/* Recent Reports */}
       <div style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Your Recent Reports</h2>
-          <button onClick={() => navigate('/my-reports')} style={styles.viewAll}>
-            View all →
-          </button>
-        </div>
+      <div style={styles.sectionHeader}>
+  <h2 style={styles.sectionTitle}>Your Recent Reports</h2>
+
+  {/* RIGHT SIDE WRAPPER */}
+  <div style={styles.sectionActions}>
+    <button
+      onClick={() => navigate('/my-reports')}
+      style={styles.viewAll}
+    >
+      View all →
+    </button>
+  </div>
+</div>
 
         {isLoading ? (
           <p style={{ color: '#94a3b8' }}>Loading your reports...</p>
@@ -118,20 +128,27 @@ const styles: Record<string, React.CSSProperties> = {
   welcome: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '28px',
+    alignItems: 'center',   //  change from flex-start
+    marginBottom: '20px',   // slightly tighter
+    gap: '12px',
   },
   welcomeTitle: { fontSize: '30px', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' },
   welcomeText: { fontSize: '14px', color: '#64748b', marginTop: '4px' },
   reportBtn: {
-    padding: '10px 20px',
+    padding: '6px 10px',        // 🔥 smaller padding
     background: '#0369a1',
     color: 'white',
+  
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: '8px',
+  
     cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: 700,
+    fontSize: '12px',           // 🔥 smaller text
+    fontWeight: 600,
+  
+    lineHeight: '1',
+    height: '30px',             // 🔥 forces compact size
+  
     flexShrink: 0,
   },
   statsRow: {
@@ -150,6 +167,10 @@ const styles: Record<string, React.CSSProperties> = {
   section: { marginBottom: '24px' },
   sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
   sectionTitle: { fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: 0 },
+  sectionActions: {
+    display: 'flex',
+    alignItems: 'center',
+  },
   viewAll: {
     padding: '6px 14px',
     background: '#f1f5f9',

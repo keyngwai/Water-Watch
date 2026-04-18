@@ -307,7 +307,8 @@ export default function AdminReports() {
         <h2 style={styles.sectionTitle}>Manage Reports</h2>
       </div>
 
-      {/* Date + quick filters */}
+     {/*
+      {/* Date + quick filters 
       <div style={styles.filterCard}>
         <div style={styles.dateFilters}>
           <label style={styles.dateLabel}>
@@ -335,7 +336,8 @@ export default function AdminReports() {
         {invalidDateRange && (
           <div style={styles.errorText}>Start date cannot be after end date.</div>
         )}
-      </div>
+      </div> */}
+      
       {selectedReport && (
         <UpdateStatusModal
           report={selectedReport}
@@ -358,23 +360,57 @@ export default function AdminReports() {
       )}
 
       {/* Filters */}
-      <div style={styles.filters}>
-        <select style={styles.filterSelect} value={filters.status} onChange={(e) => setFilter('status', e.target.value)}>
-          <option value="">All Statuses</option>
+            <div style={styles.filters}>
+        {/* Status */}
+        <select
+          style={styles.compactSelect}
+          value={filters.status}
+          onChange={(e) => setFilter('status', e.target.value)}
+        >
+          <option value="">All Status</option>
           {Object.entries(STATUS_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
+            <option key={val} value={val}>
+              {label}
+            </option>
           ))}
         </select>
+
+        {/* County */}
         <input
-          style={styles.filterInput}
-          placeholder="Filter by county..."
+          style={styles.compactInput}
+          placeholder="County"
           value={filters.county}
           onChange={(e) => setFilter('county', e.target.value)}
         />
-        <button onClick={handleRefresh} style={styles.refreshBtn}>
+
+        {/* From Date */}
+        <input
+          type="date"
+          value={filters.start_date}
+          onChange={(e) => setDateFilter('start_date', e.target.value)}
+          style={styles.compactInput}
+        />
+
+        {/* To Date */}
+        <input
+          type="date"
+          value={filters.end_date}
+          onChange={(e) => setDateFilter('end_date', e.target.value)}
+          style={styles.compactInput}
+        />
+
+        {/* Clear */}
+        <button onClick={clearDateFilters} style={styles.compactBtn}>
+          Clear
+        </button>
+
+        {/* Refresh */}
+        <button onClick={handleRefresh} style={styles.compactPrimaryBtn}>
           Refresh
         </button>
-        <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
+
+        {/* Count */}
+        <span style={styles.countText}>
           {data?.meta.total ?? 0} reports
         </span>
       </div>
@@ -500,14 +536,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filterCard: {
     background: '#111827',
-    border: '1px solid #334155',
+    border: '1px solidrgb(47, 128, 242)',
     borderRadius: '12px',
     padding: '14px',
     marginBottom: '14px',
   },
   dateFilters: {
     display: 'flex',
-    gap: '12px',
+    gap: '5px',
     alignItems: 'end',
     flexWrap: 'nowrap',
     overflowX: 'auto',
@@ -521,23 +557,25 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   dateInput: {
-    padding: '8px 10px',
-    borderRadius: '8px',
+    padding: '6px 8px',
+    borderRadius: '6px',
     border: '1px solid #334155',
-    background: '#1e293b',
+    background: '#0f172a',
     color: '#e2e8f0',
-    fontSize: '13px',
-    minWidth: '170px',
+    fontSize: '12px',
+    minWidth: '130px',
+    height: '32px',
   },
   clearBtn: {
-    padding: '8px 12px',
+    padding: '6px 10px',
     background: 'transparent',
     border: '1px solid #475569',
-    borderRadius: '8px',
+    borderRadius: '6px',
     color: '#94a3b8',
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: 600,
+    height: '32px',
   },
   errorText: {
     color: '#fca5a5',
@@ -546,27 +584,37 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filters: {
     display: 'flex',
-    gap: '12px',
     alignItems: 'center',
-    marginBottom: '20px',
-    flexWrap: 'nowrap',
-    overflowX: 'auto',
+    gap: '6px',
+    padding: '6px',
+    background: '#111827',
+    border: '1px solid #1f2937',
+    borderRadius: '10px',
+    marginBottom: '14px',
+  
+    flexWrap: 'nowrap',     //  no wrapping
+    overflowX: 'auto',      //  scroll if needed
   },
   filterSelect: {
-    padding: '8px 12px',
-    borderRadius: '8px',
+    height: '32px',
+    padding: '4px 10px',
+    background: '#0f172a',
+    color: '#fff',
+    borderRadius: '6px',
     border: '1px solid #334155',
-    background: '#1e293b',
-    color: '#e2e8f0',
-    fontSize: '13px',
+  
+    width: 'auto',
+    flex: '0 0 auto', // 🔥 THIS STOPS STRETCHING
   },
   filterInput: {
-    padding: '8px 12px',
-    borderRadius: '8px',
+    padding: '6px 10px',
+    borderRadius: '6px',
     border: '1px solid #334155',
-    background: '#1e293b',
+    background: '#0f172a',
     color: '#e2e8f0',
-    fontSize: '13px',
+    fontSize: '12px',
+    height: '32px',
+    width: '150px',
   },
   tableContainer: {
     background: '#1e293b',
@@ -678,6 +726,64 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'left',
     transition: 'all 0.15s',
   },
+  compactSelect: {
+    height: '30px',
+    padding: '0 8px',
+    fontSize: '12px',
+    background: '#0f172a',
+    color: '#e2e8f0',
+    border: '1px solid #334155',
+    borderRadius: '6px',
+  
+    width: '140px',
+    flex: '0 0 auto',
+  },
+  compactBtn: {
+    height: '30px',
+    padding: '0 8px',
+    fontSize: '11px',
+    borderRadius: '6px',
+    border: '1px solid #475569',
+    background: '#0369a1',
+    color: 'white',
+    cursor: 'pointer',
+  
+    flex: '0 0 auto',
+    whiteSpace: 'nowrap',
+    width: 'fit-content',
+  },
+  compactPrimaryBtn: {
+    height: '30px',
+    padding: '0 10px',
+    fontSize: '11px',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#0369a1',
+    color: 'white',
+    cursor: 'pointer',
+  
+    flex: '0 0 auto',
+    whiteSpace: 'nowrap',
+    width: 'fit-content',
+  },
+  countText: {
+    marginLeft: 'auto',
+    fontSize: '12px',
+    color: '#64748b',
+    whiteSpace: 'nowrap',
+  },
+  compactInput: {
+    height: '30px',
+    padding: '0 8px',
+    fontSize: '12px',
+    background: '#0f172a',
+    color: '#e2e8f0',
+    border: '1px solid #334155',
+    borderRadius: '6px',
+  
+    width: '130px',
+    flex: '0 0 auto',
+  },
   input: {
     width: '100%',
     padding: '10px 12px',
@@ -720,7 +826,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   refreshBtn: {
-    padding: '6px 12px',
+    padding: '6px 10px',
     background: '#0369a1',
     color: 'white',
     border: 'none',
@@ -728,9 +834,9 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: 600,
+    height: '32px',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
   },
 };
 

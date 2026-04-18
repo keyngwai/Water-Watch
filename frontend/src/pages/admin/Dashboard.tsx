@@ -140,13 +140,13 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
-      <button
+     {/* <button
         style={helpBtnStyle}
         onClick={() => navigate('/admin/help')}
         title="Admin Help & FAQ"
       >
         ❓ Help & FAQ
-      </button>
+      </button>*/}
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>County Water Authority Dashboard</h1>
@@ -282,7 +282,7 @@ export default function AdminDashboard() {
                     {report.reference_code}
                   </td>
                   <td style={{ ...styles.td, maxWidth: '200px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
                       {report.title}
                     </span>
                   </td>
