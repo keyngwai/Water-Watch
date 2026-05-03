@@ -58,8 +58,9 @@ export function LoginPage() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-          <p style={{ textAlign: 'center', margin: '10px 0 0 0' }}>
-          </p>
+        <p style={authStyles.link}>
+          <Link to="/forgot-password" style={{ color: '#0369a1' }}>Forgot password?</Link>
+        </p>
         <p style={authStyles.link}>
           Don't have an account? <Link to="/register" style={{ color: '#0369a1' }}>Register</Link>
         </p>

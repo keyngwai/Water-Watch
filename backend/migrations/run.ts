@@ -7,14 +7,28 @@
  * Design: Each migration is tracked in a `schema_migrations` table.
  * Already-applied migrations are skipped.
  */
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
 
+// Always load backend/.env even when invoked from repo root. Use override so a stale
+// DATABASE_URL in the shell cannot shadow this file.
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
+
+function migrateSslConfig(): false | { rejectUnauthorized: boolean } {
+  const conn = process.env.DATABASE_URL ?? '';
+  if (process.env.DB_SSL === 'false') return false;
+  // Local Postgres typically has SSL off; remote (Supabase, RDS, …) needs TLS.
+  if (/localhost|127\.0\.0\.1|::1/i.test(conn)) return false;
+  if (process.env.DB_SSL === 'true') return { rejectUnauthorized: false };
+  if (process.env.NODE_ENV === 'production') return { rejectUnauthorized: false };
+  return false;
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: migrateSslConfig(),
 });
 
 async function run() {

@@ -1,17 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Must match the backend listen port (`PORT` in backend/.env). Default 3000.
+const devBackendOrigin =
+  process.env.VITE_DEV_BACKEND_ORIGIN?.replace(/\/$/, '') ||
+  `http://127.0.0.1:${process.env.VITE_BACKEND_PORT || '3000'}`
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: devBackendOrigin,
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:3000',
+        target: devBackendOrigin,
         changeOrigin: true,
       },
     },
@@ -29,5 +34,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
   },
 })

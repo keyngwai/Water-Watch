@@ -13,6 +13,8 @@ import { useAuthStore } from './context/auth.store';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import CitizenDashboard from './pages/citizen/Dashboard';
 import SubmitReport from './pages/citizen/SubmitReport';
 import MyReports from './pages/citizen/MyReports';
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reports/:id" element={<ReportDetail />} />
 
           {/* Citizen */}

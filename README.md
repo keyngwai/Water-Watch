@@ -13,6 +13,7 @@
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
 - [Getting Started](#getting-started)
+- [Examiner Verification Commands](#examiner-verification-commands)
 - [Environment Variables](#environment-variables)
 - [Deployment Guide](#deployment-guide)
 - [Design Decisions](#design-decisions)
@@ -438,7 +439,7 @@ npm run seed:technicians
 ### 6. Start Development Servers
 
 ```bash
-# Terminal 1: Backend (port 3000)
+# Terminal 1: Backend (default port 3000; may differ if PORT is set in backend/.env)
 cd backend && npm run dev
 
 # Terminal 2: Frontend (port 5173)
@@ -446,6 +447,37 @@ cd frontend && npm run dev
 ```
 
 The app will be available at `http://localhost:5173`.
+
+**If the backend listens on a port other than 3000** (for example `PORT=3001` in `backend/.env`), the Vite proxy must match or `/api` requests will fail (often shown as a generic “500” / network error). Either set **`PORT=3000`** in `backend/.env`, or create **`frontend/.env.local`** with:
+
+```bash
+VITE_BACKEND_PORT=3001
+# or full origin: VITE_DEV_BACKEND_ORIGIN=http://127.0.0.1:3001
+```
+
+Then restart `npm run dev` in `frontend/`.
+
+---
+
+## Examiner Verification Commands
+
+Run these from the project root (`maji-watch/`) during demos or marking:
+
+```bash
+# Full verification (backend build + backend tests + frontend build)
+npm run verify:all
+
+# Backend only
+npm run verify:backend
+
+# Frontend only
+npm run verify:frontend
+```
+
+Expected result:
+- Backend TypeScript compiles
+- Auth reset tests and integration tests pass
+- Frontend production build succeeds
 
 ---
 
@@ -457,7 +489,8 @@ The app will be available at `http://localhost:5173`.
 |----------|----------|-------------|
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
 | `JWT_SECRET` | ✅ | Minimum 32-character secret |
-| `JWT_EXPIRES_IN` | | Token expiry (default: `7d`) |
+| `JWT_EXPIRES_IN` | | Access JWT TTL (default: `15m`) |
+| `REFRESH_TOKEN_DAYS` | | Refresh session lifetime in days (default: `14`; cookie `maji_refresh`) |
 | `NODE_ENV` | | `development` or `production` |
 | `PORT` | | Server port (default: `3000`) |
 | `STORAGE_PROVIDER` | | `local` or `supabase_storage` |

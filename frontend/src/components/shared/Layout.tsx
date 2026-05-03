@@ -41,7 +41,11 @@ const CitizenNav = () => {
       <div style={styles.navRight}>
         <span style={styles.userName}>{user?.full_name}</span>
         <button
-          onClick={() => { logout(); navigate('/login'); }}
+          type="button"
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
           style={styles.logoutBtn}
         >
           Sign out
@@ -87,7 +91,11 @@ const AdminNav = () => {
       </div>
       <div style={styles.adminActions}>
         <button
-          onClick={() => { logout(); navigate('/login'); }}
+          type="button"
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
           style={{ ...styles.logoutBtn, ...styles.adminLogoutBtn }}
         >
           Sign out

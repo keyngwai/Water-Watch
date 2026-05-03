@@ -69,6 +69,18 @@ export function globalErrorHandler(
     return;
   }
 
+  // PostgreSQL: undefined_table (e.g. forgot to run migrations after pulling refresh_sessions)
+  const pgCode = (err as { code?: string }).code;
+  if (pgCode === '42P01') {
+    res.status(503).json({
+      success: false,
+      error:
+        'Database schema is missing expected tables. From the repo root run: npm run migrate --prefix backend',
+      code: 'SCHEMA_OUTDATED',
+    });
+    return;
+  }
+
   // Unknown / programming errors — don't leak internal details in production
   const isProduction = process.env.NODE_ENV === 'production';
   res.status(500).json({

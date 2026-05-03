@@ -3,6 +3,7 @@ import * as reportsService from '../services/reports.service';
 import { saveReportImages, deleteReportImage } from '../services/upload.service';
 import { emitNotification } from '../utils/socket';
 import { sendSuccess, sendCreated, parsePagination } from '../utils/response';
+import { buildReportPdfBytes } from '../utils/reportExportPdf';
 
 // ---------------------------------------------------------------------------
 // Citizen: Submit a new water issue report
@@ -171,10 +172,87 @@ export async function assignTechnician(req: Request, res: Response, next: NextFu
 // ---------------------------------------------------------------------------
 export async function getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Admin dashboard stats should show all reports by default.
-    // Optional `county` query parameter can be used to filter.
-    const stats = await reportsService.getReportStats(req.query.county as string | undefined);
+    const stats = await reportsService.getFilteredReportStats({
+      county: req.query.county as string | undefined,
+      status: req.query.status as never,
+      start_date: req.query.start_date as string | undefined,
+      end_date: req.query.end_date as string | undefined,
+    });
     sendSuccess(res, stats);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportReportsCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const rows = await reportsService.exportReportsForAdmin({
+      page: 1,
+      limit: 5000,
+      offset: 0,
+      status: req.query.status as never,
+      county: req.query.county as string,
+      start_date: req.query.start_date as string,
+      end_date: req.query.end_date as string,
+      user: req.user ? { county: req.user.county, is_root_admin: req.user.is_root_admin ?? false } : undefined,
+    });
+    const headers = [
+      'reference_code',
+      'title',
+      'category',
+      'severity',
+      'status',
+      'county',
+      'sub_county',
+      'ward',
+      'citizen_name',
+      'created_at',
+      'updated_at',
+    ];
+    const escapeCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.join(',')]
+      .concat(rows.map((row) => headers.map((h) => escapeCell(row[h])).join(',')))
+      .join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="reports-export-${Date.now()}.csv"`);
+    res.status(200).send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportReportsPdf(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userCtx = req.user
+      ? { county: req.user.county, is_root_admin: req.user.is_root_admin ?? false }
+      : undefined;
+    const filterOpts = {
+      county: req.query.county as string | undefined,
+      status: req.query.status as never,
+      start_date: req.query.start_date as string | undefined,
+      end_date: req.query.end_date as string | undefined,
+    };
+
+    const [rows, stats] = await Promise.all([
+      reportsService.exportReportsForAdmin({
+        page: 1,
+        limit: 5000,
+        offset: 0,
+        status: req.query.status as never,
+        county: req.query.county as string,
+        start_date: req.query.start_date as string,
+        end_date: req.query.end_date as string,
+        user: userCtx,
+      }),
+      reportsService.getFilteredReportStats(filterOpts),
+    ]);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="reports-export-${Date.now()}.pdf"`);
+
+    const pdfBytes = await buildReportPdfBytes(rows, stats);
+    res.status(200).send(Buffer.from(pdfBytes));
   } catch (err) {
     next(err);
   }

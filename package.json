@@ -1,0 +1,13 @@
+{
+  "name": "maji-watch-workspace",
+  "private": true,
+  "scripts": {
+    "verify:all": "npm --prefix backend run build && npm --prefix backend test && npm --prefix frontend run build",
+    "verify:backend": "npm --prefix backend run build && npm --prefix backend test",
+    "verify:frontend": "npm --prefix frontend run build",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

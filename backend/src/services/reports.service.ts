@@ -41,6 +41,13 @@ export interface ListReportsOptions {
   sort?: 'newest' | 'oldest' | 'severity' | 'upvotes';
 }
 
+export interface ReportStatsOptions {
+  county?: string;
+  status?: ReportStatus;
+  start_date?: string;
+  end_date?: string;
+}
+
 export interface UpdateStatusInput {
   status: ReportStatus;
   comment?: string;
@@ -425,18 +432,25 @@ export async function upvoteReport(reportId: string, citizenId: string): Promise
 // getReportStats — for admin dashboard
 // ---------------------------------------------------------------------------
 export async function getReportStats(county?: string): Promise<Record<string, unknown>> {
-  const countyFilter = county ? `WHERE county ILIKE $1` : '';
-  const params = county ? [`%${county}%`] : [];
+  const filters: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (county) {
+    filters.push(`county ILIKE $${idx++}`);
+    params.push(`%${county}%`);
+  }
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
   const [statusCounts, categoryCounts, recentTrend, countyCounts] = await Promise.all([
     query<Record<string, unknown>>(`
       SELECT status, COUNT(*) as count
-      FROM reports ${countyFilter}
+      FROM reports ${whereClause}
       GROUP BY status
     `, params),
     query<Record<string, unknown>>(`
       SELECT category, COUNT(*) as count
-      FROM reports ${countyFilter}
+      FROM reports ${whereClause}
       GROUP BY category ORDER BY count DESC
     `, params),
     query<Record<string, unknown>>(`
@@ -453,6 +467,84 @@ export async function getReportStats(county?: string): Promise<Record<string, un
   ]);
 
   return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
+}
+
+export async function getFilteredReportStats(options: ReportStatsOptions): Promise<Record<string, unknown>> {
+  const filters: string[] = [];
+  const params: unknown[] = [];
+  let idx = 1;
+
+  if (options.county) {
+    filters.push(`county ILIKE $${idx++}`);
+    params.push(`%${options.county}%`);
+  }
+  if (options.status) {
+    filters.push(`status = $${idx++}`);
+    params.push(options.status);
+  }
+  if (options.start_date) {
+    filters.push(`created_at >= $${idx++}::date`);
+    params.push(options.start_date);
+  }
+  if (options.end_date) {
+    filters.push(`created_at < ($${idx++}::date + INTERVAL '1 day')`);
+    params.push(options.end_date);
+  }
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
+  const [statusCounts, categoryCounts, recentTrend, countyCounts] = await Promise.all([
+    query<Record<string, unknown>>(
+      `SELECT status, COUNT(*) as count FROM reports ${whereClause} GROUP BY status`,
+      params
+    ),
+    query<Record<string, unknown>>(
+      `SELECT category, COUNT(*) as count FROM reports ${whereClause} GROUP BY category ORDER BY count DESC`,
+      params
+    ),
+    query<Record<string, unknown>>(`
+      SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+      FROM reports
+      ${whereClause ? `${whereClause} AND created_at >= NOW() - INTERVAL '90 days'` : `WHERE created_at >= NOW() - INTERVAL '90 days'`}
+      GROUP BY date ORDER BY date ASC
+    `, params),
+    query<Record<string, unknown>>(
+      `SELECT county, COUNT(*) as count FROM reports ${whereClause} GROUP BY county ORDER BY count DESC`,
+      params
+    ),
+  ]);
+
+  return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
+}
+
+export async function exportReportsForAdmin(
+  opts: ListReportsOptions & { user?: { county: string | null; is_root_admin: boolean } }
+): Promise<Record<string, unknown>[]> {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  let paramIdx = 1;
+
+  if (opts.status) { conditions.push(`r.status = $${paramIdx++}`); params.push(opts.status); }
+  if (opts.category) { conditions.push(`r.category = $${paramIdx++}`); params.push(opts.category); }
+  if (opts.county) { conditions.push(`r.county ILIKE $${paramIdx++}`); params.push(`%${opts.county}%`); }
+  if (opts.start_date) { conditions.push(`r.created_at >= $${paramIdx++}::date`); params.push(opts.start_date); }
+  if (opts.end_date) { conditions.push(`r.created_at < ($${paramIdx++}::date + INTERVAL '1 day')`); params.push(opts.end_date); }
+
+  if (opts.user && !opts.user.is_root_admin && opts.user.county) {
+    conditions.push(`r.county = $${paramIdx++}`);
+    params.push(opts.user.county);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  return query<Record<string, unknown>>(`
+    SELECT r.reference_code, r.title, r.category, r.severity, r.status, r.county,
+           r.sub_county, r.ward, r.created_at, r.updated_at,
+           u.full_name AS citizen_name
+    FROM reports r
+    JOIN users u ON u.id = r.citizen_id
+    ${whereClause}
+    ORDER BY r.created_at DESC
+    LIMIT 5000
+  `, params);
 }
 
 // ---------------------------------------------------------------------------

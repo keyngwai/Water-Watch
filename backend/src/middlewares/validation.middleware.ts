@@ -53,6 +53,22 @@ export const authValidation = {
     body('password').notEmpty().withMessage('Password is required'),
   ],
 
+  forgotPassword: [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  ],
+
+  resetPassword: [
+    body('token')
+      .isString()
+      .isLength({ min: 32, max: 255 })
+      .withMessage('A valid reset token is required'),
+    body('new_password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage('Password must include uppercase, lowercase, and a number'),
+  ],
+
   createAdmin: [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('password')
@@ -99,6 +115,13 @@ export const reportValidation = {
     query('radius_km').optional({ checkFalsy: true }).isFloat({ min: 0.1, max: 100 }).withMessage('Radius must be 0.1–100 km'),
     query('lat').optional({ checkFalsy: true }).isFloat({ min: -4.72, max: 5.02 }),
     query('lng').optional({ checkFalsy: true }).isFloat({ min: 33.9, max: 41.9 }),
+  ],
+
+  analytics: [
+    query('status').optional({ checkFalsy: true }).isIn(['reported','verified','in_progress','resolved','rejected']),
+    query('county').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    query('start_date').optional({ checkFalsy: true }).isISO8601().withMessage('start_date must be ISO date'),
+    query('end_date').optional({ checkFalsy: true }).isISO8601().withMessage('end_date must be ISO date'),
   ],
 
   updateStatus: [

@@ -1,17 +1,50 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse, Report, User, Technician, ReportStats, PaginationMeta } from '../types';
 
 // ---------------------------------------------------------------------------
 // Axios instance with base configuration
 // ---------------------------------------------------------------------------
 
+function apiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_BASE_URL || '/api';
+  return raw.replace(/\/$/, '');
+}
+
+type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const res = await axios.post<ApiResponse<{ token: string }>>(
+          `${apiBaseUrl()}/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+        return res.data.data?.token ?? null;
+      } catch {
+        return null;
+      }
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
+  baseURL: apiBaseUrl(),
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
-// Attach JWT token to every request
+// Attach JWT access token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('maji_token');
   if (token) {
@@ -20,16 +53,37 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth expiry globally
+// Refresh session on expired access token (refresh token stays in httpOnly cookie)
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ error: string; code?: string }>) => {
+  async (error: AxiosError<{ error: string; code?: string }>) => {
     const code = error.response?.data?.code;
+    const originalRequest = error.config as RetryConfig | undefined;
+
+    if (
+      error.response?.status === 401 &&
+      code === 'AUTH_EXPIRED' &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/refresh') &&
+      !originalRequest.url?.includes('/auth/login') &&
+      !originalRequest.url?.includes('/auth/register')
+    ) {
+      originalRequest._retry = true;
+      const token = await refreshAccessToken();
+      if (token) {
+        localStorage.setItem('maji_token', token);
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      }
+    }
 
     if (code === 'AUTH_EXPIRED' || code === 'AUTH_INVALID') {
       localStorage.removeItem('maji_token');
       localStorage.removeItem('maji_user');
-      window.location.href = '/login';
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
 
     return Promise.reject(error);
@@ -54,6 +108,26 @@ export const authApi = {
     return res.data.data;
   },
 
+  forgotPassword: async (email: string): Promise<{ requested: boolean }> => {
+    const res = await api.post<ApiResponse<{ requested: boolean }>>('/auth/forgot-password', { email });
+    return res.data.data;
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<{ reset: boolean }> => {
+    const res = await api.post<ApiResponse<{ reset: boolean }>>('/auth/reset-password', {
+      token,
+      new_password: newPassword,
+    });
+    return res.data.data;
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      /* best-effort revoke */
+    }
+  },
 
   getMe: async (): Promise<User> => {
     const res = await api.get<ApiResponse<User>>('/auth/me');
@@ -85,6 +159,13 @@ export interface ReportFilters {
   lng?: number;
   radius_km?: number;
   sort?: string;
+}
+
+export interface ReportStatsFilters {
+  county?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 function normalizeReport(report: any): Report {
@@ -160,11 +241,28 @@ export const reportsApi = {
     return normalizeReport(res.data.data);
   },
 
-  getStats: async (county?: string): Promise<ReportStats> => {
-    const res = await api.get<ApiResponse<ReportStats>>('/reports/admin/stats', {
-      params: county ? { county } : {},
-    });
+  getStats: async (filters: ReportStatsFilters = {}): Promise<ReportStats> => {
+    const params = Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
+    );
+    const res = await api.get<ApiResponse<ReportStats>>('/reports/admin/stats', { params });
     return res.data.data;
+  },
+
+  exportCsv: async (filters: ReportStatsFilters = {}): Promise<void> => {
+    const params = Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
+    );
+    const res = await api.get('/reports/admin/export.csv', { params, responseType: 'blob' });
+    downloadBlob(res.data, `reports-export-${Date.now()}.csv`);
+  },
+
+  exportPdf: async (filters: ReportStatsFilters = {}): Promise<void> => {
+    const params = Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
+    );
+    const res = await api.get('/reports/admin/export.pdf', { params, responseType: 'blob' });
+    downloadBlob(res.data, `reports-export-${Date.now()}.pdf`);
   },
 };
 
@@ -206,6 +304,17 @@ export function getApiError(err: unknown): string {
     return data?.error || err.message || 'An unexpected error occurred.';
   }
   return (err as Error).message || 'An unexpected error occurred.';
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 export default api;

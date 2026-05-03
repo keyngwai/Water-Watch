@@ -12,7 +12,7 @@ interface AuthState {
     email: string; password: string; full_name: string;
     phone?: string; county?: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   initFromStorage: () => void;
 }
 
@@ -62,7 +62,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    await authApi.logout();
     localStorage.removeItem('maji_token');
     localStorage.removeItem('maji_user');
     set({ user: null, token: null, isAuthenticated: false });

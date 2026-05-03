@@ -79,7 +79,19 @@ router.get(
  * GET /api/reports/admin/stats
  * Dashboard statistics: counts by status, category, daily trend
  */
-router.get('/admin/stats', authenticate, authorize('admin'), reportsController.getStats);
+router.get('/admin/stats', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.getStats);
+
+/**
+ * GET /api/reports/admin/export.csv
+ * Export filtered reports as CSV
+ */
+router.get('/admin/export.csv', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.exportReportsCsv);
+
+/**
+ * GET /api/reports/admin/export.pdf
+ * Export filtered reports as PDF
+ */
+router.get('/admin/export.pdf', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.exportReportsPdf);
 
 /**
  * PATCH /api/reports/:id/status
