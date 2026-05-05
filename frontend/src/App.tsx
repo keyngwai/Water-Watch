@@ -25,6 +25,8 @@ import AdminMapView from './pages/admin/MapView';
 import AdminTechnicians from './pages/admin/Technicians';
 import AdminFAQ from './pages/admin/FAQ';
 import CitizenFAQ from './pages/citizen/FAQ';
+import TechnicianDashboard from './pages/technician/Dashboard';
+import TechnicianFAQ from './pages/technician/FAQ';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,15 +42,33 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 
 }
 
 export default function App() {
-    useEffect(() => {
-      socket.on('new_report', (data) => {
+  const { user, initFromStorage } = useAuthStore();
+
+  useEffect(() => {
+    socket.on('new_report', (data) => {
+      if (user?.role === 'admin') {
         toast.success(`New report submitted: ${data.reference_code || data.title || 'Report'}`);
+      }
+    });
+
+    if (user?.id) {
+      const techEvent = `technician_assigned_${user.id}`;
+      socket.on(techEvent, (data) => {
+        toast.success(`Task Assigned: ${data.referenceCode} - ${data.title}`, {
+          duration: 6000,
+          icon: '🛠️',
+        });
       });
       return () => {
         socket.off('new_report');
+        socket.off(techEvent);
       };
-    }, []);
-  const initFromStorage = useAuthStore((s) => s.initFromStorage);
+    }
+
+    return () => {
+      socket.off('new_report');
+    };
+  }, [user]);
 
   useEffect(() => {
     initFromStorage();
@@ -104,6 +124,14 @@ export default function App() {
             <ProtectedRoute role="admin"><AdminTechnicians /></ProtectedRoute>
           } />
           <Route path="/admin/help" element={<AdminFAQ />} />
+
+          {/* Technician */}
+          <Route path="/technician" element={
+            <ProtectedRoute role="technician"><TechnicianDashboard /></ProtectedRoute>
+          } />
+          <Route path="/technician/help" element={
+            <ProtectedRoute role="technician"><TechnicianFAQ /></ProtectedRoute>
+          } />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -51,11 +51,6 @@ export default function AdminDashboard() {
 
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
-  const [analyticsFilters, setAnalyticsFilters] = useState({
-    status: '',
-    start_date: '',
-    end_date: '',
-  });
   const [updateForm, setUpdateForm] = useState({
     status: '',
     comment: '',
@@ -64,12 +59,9 @@ export default function AdminDashboard() {
   });
 
   const statsQuery = useQuery<ReportStats>({
-    queryKey: ['admin-stats', user?.id, user?.county, user?.is_root_admin, analyticsFilters.status, analyticsFilters.start_date, analyticsFilters.end_date],
+    queryKey: ['admin-stats', user?.id, user?.county, user?.is_root_admin],
     queryFn: () => reportsApi.getStats({
       county: user?.is_root_admin ? undefined : (user?.county || undefined),
-      status: analyticsFilters.status || undefined,
-      start_date: analyticsFilters.start_date || undefined,
-      end_date: analyticsFilters.end_date || undefined,
     }),
     enabled: user?.role === 'admin',
     refetchOnMount: 'always',
@@ -162,68 +154,8 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <select
-            style={styles.filterSelect}
-            value={analyticsFilters.status}
-            onChange={(e) => setAnalyticsFilters((f) => ({ ...f, status: e.target.value }))}
-          >
-            <option value="">All statuses</option>
-            <option value="reported">Reported</option>
-            <option value="verified">Verified</option>
-            <option value="in_progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <input
-            type="date"
-            style={styles.filterInput}
-            value={analyticsFilters.start_date}
-            onChange={(e) => setAnalyticsFilters((f) => ({ ...f, start_date: e.target.value }))}
-          />
-          <input
-            type="date"
-            style={styles.filterInput}
-            value={analyticsFilters.end_date}
-            onChange={(e) => setAnalyticsFilters((f) => ({ ...f, end_date: e.target.value }))}
-          />
           <button onClick={handleRefresh} style={styles.refreshBtn}>
             Refresh
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                await reportsApi.exportCsv({
-                  county: user?.is_root_admin ? undefined : (user?.county || undefined),
-                  status: analyticsFilters.status || undefined,
-                  start_date: analyticsFilters.start_date || undefined,
-                  end_date: analyticsFilters.end_date || undefined,
-                });
-                toast.success('CSV export downloaded.');
-              } catch (err) {
-                toast.error(getApiError(err));
-              }
-            }}
-            style={styles.mapBtn}
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                await reportsApi.exportPdf({
-                  county: user?.is_root_admin ? undefined : (user?.county || undefined),
-                  status: analyticsFilters.status || undefined,
-                  start_date: analyticsFilters.start_date || undefined,
-                  end_date: analyticsFilters.end_date || undefined,
-                });
-                toast.success('PDF export downloaded.');
-              } catch (err) {
-                toast.error(getApiError(err));
-              }
-            }}
-            style={styles.mapBtn}
-          >
-            Export PDF
           </button>
           <button onClick={() => setShowCreateAdmin(true)} style={styles.createAdminBtn}>
             Create Admin
@@ -613,22 +545,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: 600,
-  },
-  filterSelect: {
-    padding: '9px 10px',
-    borderRadius: '8px',
-    border: '1px solid #334155',
-    background: '#0f172a',
-    color: '#e2e8f0',
-    fontSize: '13px',
-  },
-  filterInput: {
-    padding: '8px 10px',
-    borderRadius: '8px',
-    border: '1px solid #334155',
-    background: '#0f172a',
-    color: '#e2e8f0',
-    fontSize: '13px',
   },
   createAdminBtn: {
     padding: '10px 20px',

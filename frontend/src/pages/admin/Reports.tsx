@@ -409,6 +409,48 @@ export default function AdminReports() {
           Refresh
         </button>
 
+        {/* Export CSV */}
+        <button
+          onClick={async () => {
+            try {
+              await reportsApi.exportCsv({
+                county: filters.county || (user?.is_root_admin ? undefined : (user?.county || undefined)),
+                status: filters.status || undefined,
+                category: filters.category || undefined,
+                start_date: filters.start_date || undefined,
+                end_date: filters.end_date || undefined,
+              });
+              toast.success('CSV export downloaded.');
+            } catch (err) {
+              toast.error(getApiError(err));
+            }
+          }}
+          style={styles.compactBtn}
+        >
+          Export CSV
+        </button>
+
+        {/* Export PDF */}
+        <button
+          onClick={async () => {
+            try {
+              await reportsApi.exportPdf({
+                county: filters.county || (user?.is_root_admin ? undefined : (user?.county || undefined)),
+                status: filters.status || undefined,
+                category: filters.category || undefined,
+                start_date: filters.start_date || undefined,
+                end_date: filters.end_date || undefined,
+              });
+              toast.success('PDF export downloaded.');
+            } catch (err) {
+              toast.error(getApiError(err));
+            }
+          }}
+          style={styles.compactBtn}
+        >
+          Export PDF
+        </button>
+
         {/* Count */}
         <span style={styles.countText}>
           {data?.meta.total ?? 0} reports

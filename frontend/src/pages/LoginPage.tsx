@@ -18,8 +18,10 @@ export function LoginPage() {
     try {
       await login(email, password);
       // Use the store's user (just set) for redirection
-      const role = useAuthStore.getState().user?.role;
-      navigate(role === 'admin' ? '/admin' : '/dashboard');
+      const user = useAuthStore.getState().user;
+      if (user?.role === 'admin') navigate('/admin');
+      else if (user?.role === 'technician') navigate('/technician');
+      else navigate('/dashboard');
     } catch (err) {
       toast.error(getApiError(err));
     }

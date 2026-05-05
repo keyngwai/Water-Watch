@@ -1,6 +1,28 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse, Report, User, Technician, ReportStats, PaginationMeta } from '../types';
 
+export interface ReportFilters {
+  page?: number;
+  limit?: number;
+  status?: string;
+  category?: string;
+  county?: string;
+  start_date?: string;
+  end_date?: string;
+  lat?: number;
+  lng?: number;
+  radius_km?: number;
+  sort?: string;
+}
+
+export interface ReportStatsFilters {
+  county?: string;
+  status?: string;
+  category?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Axios instance with base configuration
 // ---------------------------------------------------------------------------

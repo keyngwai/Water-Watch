@@ -165,6 +165,17 @@ export async function assignTechnician(req: Request, res: Response, next: NextFu
       ...req.body,
       admin_id: req.user!.sub,
     });
+
+    // Notify the specific technician about the new assignment
+    if (updated.assigned_to) {
+      emitNotification(`technician_assigned_${updated.assigned_to}`, {
+        reportId: updated.id,
+        referenceCode: updated.reference_code,
+        title: updated.title,
+        location: updated.location_name || `${updated.county}, ${updated.sub_county}`,
+      });
+    }
+
     sendSuccess(res, updated, 'Technician assigned successfully.');
   } catch (err) {
     next(err);
@@ -198,6 +209,7 @@ export async function exportReportsCsv(req: Request, res: Response, next: NextFu
       limit: 5000,
       offset: 0,
       status: req.query.status as never,
+      category: req.query.category as never,
       county: req.query.county as string,
       start_date: req.query.start_date as string,
       end_date: req.query.end_date as string,
@@ -240,6 +252,7 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
     const filterOpts = {
       county: req.query.county as string | undefined,
       status: req.query.status as never,
+      category: req.query.category as never,
       start_date: req.query.start_date as string | undefined,
       end_date: req.query.end_date as string | undefined,
     };
@@ -250,6 +263,7 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
         limit: 5000,
         offset: 0,
         status: req.query.status as never,
+        category: req.query.category as never,
         county: req.query.county as string,
         start_date: req.query.start_date as string,
         end_date: req.query.end_date as string,

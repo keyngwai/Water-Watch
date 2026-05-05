@@ -105,15 +105,70 @@ const AdminNav = () => {
   );
 };
 
+const TechnicianNav = () => {
+  const location = useLocation();
+  const { logout, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const links = [
+    { to: '/technician', label: 'My Tasks' },
+    { to: '/technician/help', label: 'Tech Guide' },
+  ];
+
+  return (
+    <nav style={{ ...styles.nav, background: '#0f172a', borderColor: '#1e293b' }}>
+      <Link to="/technician" style={styles.brand}>
+        <span style={{ ...styles.brandText, color: '#10b981' }}>Tech Portal</span>
+      </Link>
+      <div style={styles.navLinks}>
+        {links.map((l) => (
+          <Link
+            key={l.to}
+            to={l.to}
+            style={{
+              ...styles.navLink,
+              color: location.pathname === l.to ? '#10b981' : '#94a3b8',
+              background: location.pathname === l.to ? '#064e3b' : 'transparent',
+              borderBottom: location.pathname === l.to ? '2px solid #10b981' : 'none',
+            }}
+          >
+            {l.label}
+          </Link>
+        ))}
+      </div>
+      <div style={styles.navRight}>
+        <span style={{ ...styles.userName, color: '#e2e8f0' }}>{user?.full_name}</span>
+        <button
+          type="button"
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
+          style={{ ...styles.logoutBtn, background: '#1e293b', color: '#94a3b8', borderColor: '#334155' }}
+        >
+          Sign out
+        </button>
+      </div>
+    </nav>
+  );
+};
+
 export default function Layout({ children, title }: LayoutProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const isTech = user?.role === 'technician';
+
+  const getNav = () => {
+    if (isAdmin) return <AdminNav />;
+    if (isTech) return <TechnicianNav />;
+    return <CitizenNav />;
+  };
 
   return (
-    <div style={isAdmin ? styles.adminWrapper : styles.wrapper}>
-      {isAdmin ? <AdminNav /> : <CitizenNav />}
+    <div style={(isAdmin || isTech) ? styles.adminWrapper : styles.wrapper}>
+      {getNav()}
       <main style={styles.main}>
-        {title && <h1 style={{ ...styles.pageTitle, color: isAdmin ? '#e2e8f0' : '#0f172a' }}>{title}</h1>}
+        {title && <h1 style={{ ...styles.pageTitle, color: (isAdmin || isTech) ? '#e2e8f0' : '#0f172a' }}>{title}</h1>}
         {children}
       </main>
     </div>
