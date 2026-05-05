@@ -6,51 +6,56 @@ import { authValidation, validate } from '../middlewares/validation.middleware';
 
 const router = Router();
 
+// ---------------------------------------------------------------------------
+// Authentication Routes
+// Handles user registration, login, session management, and password recovery.
+// ---------------------------------------------------------------------------
+
 /**
  * POST /api/auth/register
- * Citizen self-registration
+ * Public: Allows citizens to create a new account.
  */
 router.post('/register', authValidation.register, validate, authController.register);
 
 /**
  * POST /api/auth/login
- * Login for all roles (citizen, admin, technician)
+ * Public: Authenticates users and returns access token + refresh cookie.
  */
 router.post('/login', authValidation.login, validate, authController.login);
 
 /**
  * POST /api/auth/refresh
- * Rotate refresh cookie and issue a new access token (JSON body: { token }).
+ * Public: Uses the refresh cookie to issue a new short-lived access token.
  */
 router.post('/refresh', authController.refresh);
 
 /**
  * POST /api/auth/logout
- * Revoke refresh session and clear cookie.
+ * Public: Revokes the current session and clears auth cookies.
  */
 router.post('/logout', authController.logout);
 
 /**
  * POST /api/auth/forgot-password
- * Request password reset email
+ * Public: Sends a password reset link to the provided email address.
  */
 router.post('/forgot-password', authValidation.forgotPassword, validate, authController.forgotPassword);
 
 /**
  * POST /api/auth/reset-password
- * Reset password using one-time token
+ * Public: Resets the password using a valid token from the reset email.
  */
 router.post('/reset-password', authValidation.resetPassword, validate, authController.resetPassword);
 
 /**
  * GET /api/auth/me
- * Get current authenticated user's profile
+ * Private: Returns the profile of the currently logged-in user.
  */
 router.get('/me', authenticate, authController.getMe);
 
 /**
  * POST /api/auth/admin/create
- * Admin creates a new admin account
+ * Admin: Allows authorized administrators to create other administrative accounts.
  */
 router.post('/admin/create', authenticate, authorize('admin'), authValidation.createAdmin, validate, authController.createAdmin);
 

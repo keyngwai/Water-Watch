@@ -40,11 +40,19 @@ export const REFRESH_COOKIE_NAME = 'maji_refresh';
 
 const REFRESH_TOKEN_BYTES = 32;
 
+/**
+ * Calculates the refresh token time-to-live in milliseconds based on environment variables.
+ * Defaults to 14 days if not configured.
+ */
 function refreshTokenTtlMs(): number {
   const days = parseInt(process.env.REFRESH_TOKEN_DAYS || '14', 10);
   return Math.max(1, days) * 24 * 60 * 60 * 1000;
 }
 
+/**
+ * Generates cookie options for the refresh token.
+ * Uses httpOnly for security and secure flag in production.
+ */
 export function getRefreshCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
@@ -55,10 +63,16 @@ export function getRefreshCookieOptions(): CookieOptions {
   };
 }
 
+/**
+ * Hashes a raw refresh token using SHA-256 for secure storage in the database.
+ */
 function hashRefreshToken(raw: string): string {
   return crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
 }
 
+/**
+ * Generates a new random refresh token, hashes it, and stores the session in the database.
+ */
 async function insertRefreshSession(userId: string): Promise<{ rawToken: string }> {
   const rawToken = crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('hex');
   const tokenHash = hashRefreshToken(rawToken);
@@ -88,6 +102,10 @@ interface SecurityEventInput {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Registers a new citizen user.
+ * Validates unique email, hashes password, and creates a session.
+ */
 export async function registerCitizen(input: RegisterInput): Promise<AuthSessionResult> {
   // Check for duplicate email
   const existing = await queryOne<UserRow>(
@@ -121,6 +139,10 @@ export async function registerCitizen(input: RegisterInput): Promise<AuthSession
   return { user, accessToken, refreshTokenRaw: rawToken };
 }
 
+/**
+ * Authenticates a user by email and password.
+ * Implements constant-time comparison to mitigate timing attacks.
+ */
 export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
   const user = await queryOne<UserRow>(
     `SELECT id, email, phone, full_name, password_hash, role, county, sub_county, ward,
@@ -173,6 +195,10 @@ export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
   };
 }
 
+/**
+ * Rotates an existing refresh token for a new one.
+ * Implements a database transaction and FOR UPDATE lock to prevent race conditions.
+ */
 export async function rotateRefreshToken(
   rawToken: string
 ): Promise<{ accessToken: string; newRefreshToken: string } | null> {
@@ -231,6 +257,9 @@ export async function rotateRefreshToken(
   });
 }
 
+/**
+ * Invalidates a refresh token by setting its revoked_at timestamp.
+ */
 export async function revokeRefreshToken(rawToken: string): Promise<void> {
   const tokenHash = hashRefreshToken(rawToken);
   await query(
@@ -241,6 +270,9 @@ export async function revokeRefreshToken(rawToken: string): Promise<void> {
   );
 }
 
+/**
+ * Fetches user profile by ID, excluding sensitive fields like password hash.
+ */
 export async function getUserById(id: string): Promise<Omit<UserRow, 'password_hash'> | null> {
   return queryOne<Omit<UserRow, 'password_hash'>>(
     `SELECT id, email, phone, full_name, role, county, sub_county, ward,
@@ -250,6 +282,10 @@ export async function getUserById(id: string): Promise<Omit<UserRow, 'password_h
   );
 }
 
+/**
+ * Generates a password reset token and sends an email to the user.
+ * Implements security logging for auditing.
+ */
 export async function requestPasswordReset(
   email: string,
   frontendResetUrl: string,
@@ -332,6 +368,10 @@ export async function requestPasswordReset(
   });
 }
 
+/**
+ * Resets a user's password using a valid reset token.
+ * Implements a transaction to update the password and invalidate the token.
+ */
 export async function resetPasswordWithToken(
   token: string,
   newPassword: string,
@@ -392,9 +432,10 @@ export async function resetPasswordWithToken(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Admin user creation (internal, called during seeding or by super-admin)
-// ---------------------------------------------------------------------------
+/**
+ * Internal: Creates an admin or technician user account.
+ * Used during seeding or by super-admins.
+ */
 export async function createAdminUser(
   input: RegisterInput & { role: UserRole; is_root_admin?: boolean }
 ): Promise<Omit<UserRow, 'password_hash'>> {
@@ -415,10 +456,9 @@ export async function createAdminUser(
   return rows[0];
 }
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
+/**
+ * Signs a short-lived JWT access token for authentication.
+ */
 function signAccessToken(payload: JwtPayload): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -435,6 +475,9 @@ function signAccessToken(payload: JwtPayload): string {
   });
 }
 
+/**
+ * Persists security events to the database for auditing and forensics.
+ */
 async function recordSecurityEvent(event: SecurityEventInput): Promise<void> {
   try {
     await query(

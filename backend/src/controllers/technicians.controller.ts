@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import * as techService from '../services/technicians.service';
 import { sendSuccess, sendCreated } from '../utils/response';
 
+/**
+ * Controller (Admin): Lists technicians, optionally filtered by county.
+ * Returns enriched data including active assignment counts.
+ */
 export async function listTechnicians(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Admin-only listing: supports optional `county` filter (used by the UI dropdown).
@@ -12,6 +16,9 @@ export async function listTechnicians(req: Request, res: Response, next: NextFun
   }
 }
 
+/**
+ * Controller (Admin): Fetches a single technician profile by ID.
+ */
 export async function getTechnician(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Admin-only profile fetch.
@@ -22,6 +29,10 @@ export async function getTechnician(req: Request, res: Response, next: NextFunct
   }
 }
 
+/**
+ * Controller (Admin): Registers a new technician.
+ * Orchestrates user creation and technician profile setup.
+ */
 export async function createTechnician(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Creates:
@@ -34,6 +45,9 @@ export async function createTechnician(req: Request, res: Response, next: NextFu
   }
 }
 
+/**
+ * Controller (Admin): Deletes a technician and their associated user account.
+ */
 export async function deleteTechnician(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Deleting the technician's profile also deletes their user account.

@@ -16,12 +16,19 @@ interface AuthState {
   initFromStorage: () => void;
 }
 
+/**
+ * Auth Store: Manages global authentication state using Zustand.
+ * Handles user profile, JWT tokens, and session hydration from localStorage.
+ */
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isLoading: false,
   isAuthenticated: false,
 
+  /**
+   * Initializes the store from localStorage on application startup.
+   */
   initFromStorage: () => {
     const token = localStorage.getItem('maji_token');
     const userStr = localStorage.getItem('maji_user');
@@ -36,6 +43,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  /**
+   * Authenticates a user and persists the session.
+   */
   login: async (email, password) => {
     set({ isLoading: true });
     try {
@@ -49,6 +59,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  /**
+   * Registers a new citizen and automatically logs them in.
+   */
   register: async (data) => {
     set({ isLoading: true });
     try {
@@ -62,6 +75,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  /**
+   * Revokes the current session and clears all local auth data.
+   */
   logout: async () => {
     await authApi.logout();
     localStorage.removeItem('maji_token');

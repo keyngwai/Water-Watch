@@ -64,9 +64,10 @@ export interface AssignReportInput {
   admin_id: string;
 }
 
-// ---------------------------------------------------------------------------
-// createReport
-// ---------------------------------------------------------------------------
+/**
+ * Creates a new water issue report in the database.
+ * @param input - Report data including citizen ID, category, severity, title, and location.
+ */
 export async function createReport(input: CreateReportInput): Promise<ReportRow> {
   const row = await queryOne<ReportRow>(`
     INSERT INTO reports (
@@ -85,9 +86,10 @@ export async function createReport(input: CreateReportInput): Promise<ReportRow>
   return row;
 }
 
-// ---------------------------------------------------------------------------
-// getReportById — includes images, technician name, and public admin actions
-// ---------------------------------------------------------------------------
+/**
+ * Retrieves a detailed report by ID, including images, timeline, and associated profiles.
+ * Implements access control for non-public reports.
+ */
 export async function getReportById(
   id: string,
   requestingUserId?: string
@@ -133,9 +135,9 @@ export async function getReportById(
   return { ...report, images, timeline: publicActions, citizen, technician };
 }
 
-// ---------------------------------------------------------------------------
-// listReports — paginated, filterable, with proximity search
-// ---------------------------------------------------------------------------
+/**
+ * Lists public reports with pagination, filtering, and optional proximity search.
+ */
 export async function listReports(
   opts: ListReportsOptions
 ): Promise<{ reports: Record<string, unknown>[]; meta: ReturnType<typeof buildPaginationMeta> }> {
@@ -209,9 +211,10 @@ export async function listReports(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Admin: listAllReports (bypasses is_public filter, includes private data)
-// ---------------------------------------------------------------------------
+/**
+ * Lists all reports for administrative view, bypassing public filters.
+ * Implements county-based visibility for county admins.
+ */
 export async function adminListReports(
   opts: ListReportsOptions & { user?: { county: string | null; is_root_admin: boolean } }
 ): Promise<{ reports: Record<string, unknown>[]; meta: ReturnType<typeof buildPaginationMeta> }> {
@@ -275,9 +278,9 @@ export async function adminListReports(
   };
 }
 
-// ---------------------------------------------------------------------------
-// updateReportStatus — transactional: updates report + creates audit log entry
-// ---------------------------------------------------------------------------
+/**
+ * Updates a report's status and records an audit log entry in a transaction.
+ */
 export async function updateReportStatus(
   reportId: string,
   input: UpdateStatusInput
@@ -341,9 +344,9 @@ export async function updateReportStatus(
   });
 }
 
-// ---------------------------------------------------------------------------
-// assignReportTechnician — transactional: assigns technician + audit log
-// ---------------------------------------------------------------------------
+/**
+ * Assigns a technician to a report and records an audit log entry.
+ */
 export async function assignReportTechnician(
   reportId: string,
   input: AssignReportInput
@@ -389,9 +392,10 @@ export async function assignReportTechnician(
   });
 }
 
-// ---------------------------------------------------------------------------
-// upvoteReport — idempotent (safe to call multiple times)
-// ---------------------------------------------------------------------------
+/**
+ * Toggles an upvote on a report for a citizen.
+ * Implements idempotent toggle behavior (upvote/un-upvote).
+ */
 export async function upvoteReport(reportId: string, citizenId: string): Promise<{ upvote_count: number }> {
   return withTransaction(async (client: PoolClient) => {
     // Try to insert upvote; if duplicate, remove it (toggle behavior)
@@ -428,47 +432,9 @@ export async function upvoteReport(reportId: string, citizenId: string): Promise
   });
 }
 
-// ---------------------------------------------------------------------------
-// getReportStats — for admin dashboard
-// ---------------------------------------------------------------------------
-export async function getReportStats(county?: string): Promise<Record<string, unknown>> {
-  const filters: string[] = [];
-  const params: unknown[] = [];
-  let idx = 1;
-
-  if (county) {
-    filters.push(`county ILIKE $${idx++}`);
-    params.push(`%${county}%`);
-  }
-  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-
-  const [statusCounts, categoryCounts, recentTrend, countyCounts] = await Promise.all([
-    query<Record<string, unknown>>(`
-      SELECT status, COUNT(*) as count
-      FROM reports ${whereClause}
-      GROUP BY status
-    `, params),
-    query<Record<string, unknown>>(`
-      SELECT category, COUNT(*) as count
-      FROM reports ${whereClause}
-      GROUP BY category ORDER BY count DESC
-    `, params),
-    query<Record<string, unknown>>(`
-      SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
-      FROM reports
-      ${county ? `WHERE county ILIKE $1 AND created_at >= NOW() - INTERVAL '30 days'` : `WHERE created_at >= NOW() - INTERVAL '30 days'`}
-      GROUP BY date ORDER BY date ASC
-    `, params),
-    query<Record<string, unknown>>(`
-      SELECT county, COUNT(*) as count
-      FROM reports
-      GROUP BY county ORDER BY count DESC
-    `, []),
-  ]);
-
-  return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
-}
-
+/**
+ * Generates aggregated report statistics for dashboard visualization.
+ */
 export async function getFilteredReportStats(options: ReportStatsOptions): Promise<Record<string, unknown>> {
   const filters: string[] = [];
   const params: unknown[] = [];
@@ -516,6 +482,9 @@ export async function getFilteredReportStats(options: ReportStatsOptions): Promi
   return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
 }
 
+/**
+ * Fetches a flat list of reports for administrative export (CSV/PDF).
+ */
 export async function exportReportsForAdmin(
   opts: ListReportsOptions & { user?: { county: string | null; is_root_admin: boolean } }
 ): Promise<Record<string, unknown>[]> {
@@ -547,9 +516,9 @@ export async function exportReportsForAdmin(
   `, params);
 }
 
-// ---------------------------------------------------------------------------
-// Internal: Enforce valid state machine transitions
-// ---------------------------------------------------------------------------
+/**
+ * Internal: Enforce valid state machine transitions for report status.
+ */
 function validateStatusTransition(current: ReportStatus, next: ReportStatus): void {
   const allowedTransitions: Record<ReportStatus, ReportStatus[]> = {
     reported:     ['verified', 'rejected'],

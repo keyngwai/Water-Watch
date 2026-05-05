@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import * as authService from '../services/auth.service';
 import { sendSuccess, sendCreated, sendError } from '../utils/response';
 
+/**
+ * Helper: Attaches an httpOnly refresh token cookie to the response.
+ * @param res - Express response object
+ * @param refreshTokenRaw - The raw refresh token string to store in the cookie
+ */
 function attachAuthCookies(res: Response, refreshTokenRaw: string): void {
   res.cookie(
     authService.REFRESH_COOKIE_NAME,
@@ -10,6 +15,10 @@ function attachAuthCookies(res: Response, refreshTokenRaw: string): void {
   );
 }
 
+/**
+ * Controller: Handles citizen registration.
+ * Hashes password, creates user, and returns access token + refresh cookie.
+ */
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await authService.registerCitizen(req.body);
@@ -24,6 +33,10 @@ export async function register(req: Request, res: Response, next: NextFunction):
   }
 }
 
+/**
+ * Controller: Handles user login for all roles.
+ * Verifies credentials and returns access token + refresh cookie.
+ */
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await authService.loginUser(req.body);
@@ -34,6 +47,10 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
+/**
+ * Controller: Rotates the refresh token and issues a new access token.
+ * Requires the 'maji_refresh' cookie to be present.
+ */
 export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const raw = req.cookies?.[authService.REFRESH_COOKIE_NAME] as string | undefined;
@@ -59,6 +76,9 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
   }
 }
 
+/**
+ * Controller: Logs out the user by revoking the refresh token and clearing the cookie.
+ */
 export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const raw = req.cookies?.[authService.REFRESH_COOKIE_NAME] as string | undefined;
@@ -77,6 +97,9 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
   }
 }
 
+/**
+ * Controller: Returns the profile of the currently authenticated user.
+ */
 export async function getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // `authenticate` attaches JWT payload to `req.user`, so we can use `sub` as the user id.
@@ -87,6 +110,9 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
+/**
+ * Controller: Initiates the password reset process by sending an email.
+ */
 export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const frontendResetUrl = process.env.FRONTEND_RESET_URL || 'http://localhost:5173/reset-password';
@@ -104,6 +130,9 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
   }
 }
 
+/**
+ * Controller: Resets the password using a valid reset token.
+ */
 export async function resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await authService.resetPasswordWithToken(req.body.token, req.body.new_password, {
@@ -119,6 +148,10 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
 // ---------------------------------------------------------------------------
 // Admin: Create a new admin account
 // ---------------------------------------------------------------------------
+
+/**
+ * Controller (Admin): Allows existing admins to create new administrative accounts.
+ */
 export async function createAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const admin = await authService.createAdminUser({

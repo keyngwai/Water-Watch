@@ -7,19 +7,20 @@ const router = Router();
 
 /**
  * GET /api/technicians
- * Admin: list all technicians, optionally filtered by county
+ * Admin: List all technicians, optionally filtered by county.
+ * Returns enriched data including active assignment counts.
  */
 router.get('/', authenticate, authorize('admin'), techController.listTechnicians);
 
 /**
  * GET /api/technicians/:id
- * Admin: get a specific technician's profile and assignment history
+ * Admin: Retrieve a specific technician's profile and linked user information.
  */
 router.get('/:id', authenticate, authorize('admin'), techController.getTechnician);
 
 /**
  * POST /api/technicians
- * Admin: register a new technician (creates user account + technician profile)
+ * Admin: Register a new technician (creates user account + technician profile).
  */
 router.post(
   '/',
@@ -32,7 +33,7 @@ router.post(
 
 /**
  * DELETE /api/technicians/:id
- * Admin: delete a technician and their user account
+ * Admin: Deletes a technician and their associated user account.
  */
 router.delete('/:id', authenticate, authorize('admin'), techController.deleteTechnician);
 

@@ -12,23 +12,24 @@ const router = Router();
 
 /**
  * GET /api/reports
- * List public reports with filtering, pagination, proximity search
+ * Public: List reports with filtering, pagination, and proximity search.
  */
 router.get('/', reportValidation.list, validate, optionalAuth, reportsController.listReports);
 
 /**
  * GET /api/reports/:id
- * Get a single public report with images and timeline
+ * Public: Get a single report with its full details, images, and public timeline.
  */
 router.get('/:id', optionalAuth, reportsController.getReport);
 
 // ---------------------------------------------------------------------------
 // Citizen Routes
+// Features restricted to registered citizens.
 // ---------------------------------------------------------------------------
 
 /**
  * POST /api/reports
- * Submit a new water issue report (with optional image uploads)
+ * Citizen: Submit a new water issue report with up to 5 optional images.
  */
 router.post(
   '/',
@@ -42,29 +43,30 @@ router.post(
 
 /**
  * GET /api/reports/my/reports
- * Citizen views their own reports (all statuses)
+ * Citizen: Returns a list of reports submitted by the authenticated user.
  */
 router.get('/my/reports', authenticate, authorize('citizen'), reportsController.getMyReports);
 
 /**
  * POST /api/reports/:id/upvote
- * Toggle upvote on a report
+ * Citizen: Toggles a community upvote on a specific report.
  */
 router.post('/:id/upvote', authenticate, authorize('citizen'), reportsController.upvoteReport);
 
 /**
  * DELETE /api/reports/:id/images/:imageId
- * Remove an image from a report (citizen can only delete their own report's images)
+ * Citizen: Deletes an image from a report. (Authentication required).
  */
 router.delete('/:id/images/:imageId', authenticate, reportsController.deleteImage);
 
 // ---------------------------------------------------------------------------
 // Admin Routes
+// Advanced management features restricted to authorized administrators.
 // ---------------------------------------------------------------------------
 
 /**
  * GET /api/reports/admin/all
- * Admin list with full data, no is_public filter
+ * Admin: List all reports, including non-public ones, with full diagnostic data.
  */
 router.get(
   '/admin/all',
@@ -77,25 +79,25 @@ router.get(
 
 /**
  * GET /api/reports/admin/stats
- * Dashboard statistics: counts by status, category, daily trend
+ * Admin: Returns aggregated statistics and KPIs for the dashboard.
  */
 router.get('/admin/stats', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.getStats);
 
 /**
  * GET /api/reports/admin/export.csv
- * Export filtered reports as CSV
+ * Admin: Downloads a CSV file of filtered report data for offline analysis.
  */
 router.get('/admin/export.csv', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.exportReportsCsv);
 
 /**
  * GET /api/reports/admin/export.pdf
- * Export filtered reports as PDF
+ * Admin: Generates and downloads a professional PDF summary of reports and stats.
  */
 router.get('/admin/export.pdf', authenticate, authorize('admin'), reportValidation.analytics, validate, reportsController.exportReportsPdf);
 
 /**
  * PATCH /api/reports/:id/status
- * Update status, assign technician, add admin comment
+ * Admin: Updates a report's status, assigns a technician, or adds an official comment.
  */
 router.patch(
   '/:id/status',
@@ -108,7 +110,7 @@ router.patch(
 
 /**
  * PATCH /api/reports/:id/assign
- * Assign technician to a report without changing status
+ * Admin: Directly assigns a field technician to a report without triggering a status change.
  */
 router.patch(
   '/:id/assign',

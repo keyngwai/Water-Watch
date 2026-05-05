@@ -5,9 +5,10 @@ import { emitNotification } from '../utils/socket';
 import { sendSuccess, sendCreated, parsePagination } from '../utils/response';
 import { buildReportPdfBytes } from '../utils/reportExportPdf';
 
-// ---------------------------------------------------------------------------
-// Citizen: Submit a new water issue report
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Citizen): Submit a new water issue report.
+ * Persists report data first, then handles image uploads and triggers notifications.
+ */
 export async function createReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Persist the report first; uploaded images are processed afterwards.
@@ -34,9 +35,10 @@ export async function createReport(req: Request, res: Response, next: NextFuncti
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public: List reports with filters and pagination
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Public): List reports with filters and pagination.
+ * Supports filtering by status, category, county, and proximity (lat/lng/radius).
+ */
 export async function listReports(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { page, limit, offset } = parsePagination(
@@ -61,9 +63,9 @@ export async function listReports(req: Request, res: Response, next: NextFunctio
   }
 }
 
-// ---------------------------------------------------------------------------
-// Citizen: View own reports
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Citizen): Fetch reports submitted by the logged-in user.
+ */
 export async function getMyReports(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { page, limit, offset } = parsePagination(
@@ -83,9 +85,9 @@ export async function getMyReports(req: Request, res: Response, next: NextFuncti
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public: Get single report
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Public): Get a single report by ID, including its timeline and images.
+ */
 export async function getReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const report = await reportsService.getReportById(req.params.id, req.user?.sub);
@@ -95,9 +97,9 @@ export async function getReport(req: Request, res: Response, next: NextFunction)
   }
 }
 
-// ---------------------------------------------------------------------------
-// Citizen: Upvote a report
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Citizen): Toggle an upvote on a specific report.
+ */
 export async function upvoteReport(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await reportsService.upvoteReport(req.params.id, req.user!.sub);
@@ -107,9 +109,10 @@ export async function upvoteReport(req: Request, res: Response, next: NextFuncti
   }
 }
 
-// ---------------------------------------------------------------------------
-// Admin: List all reports (including private, full data)
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Admin): List all reports (including private) with full data.
+ * Applies county-level restrictions for county admins.
+ */
 export async function adminListReports(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { page, limit, offset } = parsePagination(
@@ -135,9 +138,10 @@ export async function adminListReports(req: Request, res: Response, next: NextFu
   }
 }
 
-// ---------------------------------------------------------------------------
-// Admin: Update report status (verify, assign, resolve, reject)
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Admin): Update a report's status (e.g., verify, reject, resolve).
+ * Also handles transitions like 'in_progress'.
+ */
 export async function updateReportStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Admin controls workflow transitions (verify/assign/resolve/reject) through this endpoint.
@@ -151,9 +155,9 @@ export async function updateReportStatus(req: Request, res: Response, next: Next
   }
 }
 
-// ---------------------------------------------------------------------------
-// Admin: Assign a technician to a report (without status change)
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Admin): Assign a technician to a report without changing the status.
+ */
 export async function assignTechnician(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Assignment is separated from status updates so admins can route technicians independently.
@@ -167,9 +171,9 @@ export async function assignTechnician(req: Request, res: Response, next: NextFu
   }
 }
 
-// ---------------------------------------------------------------------------
-// Admin: Get dashboard statistics
-// ---------------------------------------------------------------------------
+/**
+ * Controller (Admin): Get dashboard statistics (KPIs) for the admin overview.
+ */
 export async function getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const stats = await reportsService.getFilteredReportStats({
@@ -184,6 +188,9 @@ export async function getStats(req: Request, res: Response, next: NextFunction):
   }
 }
 
+/**
+ * Controller (Admin): Export filtered reports to a CSV file.
+ */
 export async function exportReportsCsv(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const rows = await reportsService.exportReportsForAdmin({
@@ -222,6 +229,9 @@ export async function exportReportsCsv(req: Request, res: Response, next: NextFu
   }
 }
 
+/**
+ * Controller (Admin): Export filtered reports and statistics to a professional PDF.
+ */
 export async function exportReportsPdf(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userCtx = req.user
@@ -258,9 +268,9 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
   }
 }
 
-// ---------------------------------------------------------------------------
-// Citizen/Admin: Delete an image from a report
-// ---------------------------------------------------------------------------
+/**
+ * Controller: Delete an image from a report.
+ */
 export async function deleteImage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     await deleteReportImage(req.params.imageId, req.params.id);

@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { validationResult, body, param, query } from 'express-validator';
 import { TECHNICIAN_JOB_ROLE_VALUES } from '../constants/technicianRoles';
 
-// ---------------------------------------------------------------------------
-// validate: Runs after express-validator chains; short-circuits if errors exist.
-// ---------------------------------------------------------------------------
+/**
+ * Middleware: Final validation check. Runs after express-validator rule chains.
+ * Short-circuits the request with a 422 Unprocessable Entity response if any rules failed.
+ */
 export function validate(req: Request, res: Response, next: NextFunction): void {
   // `express-validator` accumulates rule results on the request.
   // If anything fails, we short-circuit with a 422 response.

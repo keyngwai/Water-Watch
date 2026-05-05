@@ -3,10 +3,11 @@ import jwt from 'jsonwebtoken';
 import { JwtPayload, UserRole } from '../types';
 import { sendError } from '../utils/response';
 
-// ---------------------------------------------------------------------------
-// authenticate: Validates the Bearer JWT in the Authorization header.
-// Attaches the decoded payload to req.user for downstream use.
-// ---------------------------------------------------------------------------
+/**
+ * Middleware: Validates the Bearer JWT in the Authorization header.
+ * Attaches the decoded payload to req.user for downstream use.
+ * Rejects requests with missing, invalid, or expired tokens.
+ */
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   // We expect a standard `Authorization: Bearer <jwt>` header.
   const authHeader = req.headers.authorization;
@@ -37,11 +38,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   }
 }
 
-// ---------------------------------------------------------------------------
-// authorize: Role-based access control gate.
-// Must be used AFTER authenticate middleware.
-// Usage: router.post('/admin/action', authenticate, authorize('admin'), handler)
-// ---------------------------------------------------------------------------
+/**
+ * Middleware: Role-based access control gate.
+ * Must be used AFTER authenticate middleware.
+ * @param allowedRoles - Array of roles permitted to access the route.
+ */
 export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -64,11 +65,10 @@ export function authorize(...allowedRoles: UserRole[]) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// optionalAuth: Attaches req.user if a valid token is present, but doesn't
-// reject unauthenticated requests. Used for public endpoints that show
-// additional data to logged-in users (e.g., "did you upvote this?").
-// ---------------------------------------------------------------------------
+/**
+ * Middleware: Attaches req.user if a valid token is present, but doesn't reject unauthenticated requests.
+ * Used for public endpoints that show additional data to logged-in users.
+ */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   // Optional JWT parsing so public endpoints can still personalize UI for logged-in users.
   const authHeader = req.headers.authorization;

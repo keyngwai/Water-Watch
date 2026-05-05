@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 
-// ---------------------------------------------------------------------------
-// AppError: Structured error class that carries an HTTP status code.
-// Throw this anywhere in the service/controller layer.
-// ---------------------------------------------------------------------------
+/**
+ * Custom Error Class: Structured error that carries an HTTP status code and a unique error code.
+ * Use this to throw predictable, operational errors throughout the application.
+ */
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
@@ -20,10 +20,10 @@ export class AppError extends Error {
   }
 }
 
-// ---------------------------------------------------------------------------
-// globalErrorHandler: Express error-handling middleware (4 params required).
-// Catches all errors thrown or passed via next(err).
-// ---------------------------------------------------------------------------
+/**
+ * Global Error Handler: Express middleware that catches all errors thrown or passed via next(err).
+ * Standardizes error responses and logs errors with request context.
+ */
 export function globalErrorHandler(
   err: Error,
   req: Request,
@@ -90,9 +90,9 @@ export function globalErrorHandler(
   });
 }
 
-// ---------------------------------------------------------------------------
-// notFound: Catches requests to undefined routes
-// ---------------------------------------------------------------------------
+/**
+ * 404 Handler: Catches requests to routes that are not defined in the application.
+ */
 export function notFound(req: Request, res: Response): void {
   res.status(404).json({
     success: false,

@@ -15,6 +15,10 @@ export interface CreateTechnicianInput {
   county: string;
 }
 
+/**
+ * Registers a new technician.
+ * Creates a linked user account with 'technician' role and a profile in the technicians table.
+ */
 export async function createTechnician(input: CreateTechnicianInput): Promise<Record<string, unknown>> {
   // We create a shared user account first (role='technician'),
   // then attach the operational technician profile in the `technicians` table.
@@ -43,6 +47,10 @@ export async function createTechnician(input: CreateTechnicianInput): Promise<Re
   return { ...user, technician: rows[0] };
 }
 
+/**
+ * Lists technicians, optionally filtered by county.
+ * Aggregates active assignment counts to show current workload.
+ */
 export async function listTechnicians(county?: string): Promise<Record<string, unknown>[]> {
   // Returns technicians enriched with a simple "active assignments" count.
   // This is used by the admin UI to show availability/busyness.
@@ -62,6 +70,9 @@ export async function listTechnicians(county?: string): Promise<Record<string, u
   `, params);
 }
 
+/**
+ * Fetches a single technician's profile and linked user data by technician ID.
+ */
 export async function getTechnicianById(id: string): Promise<Record<string, unknown>> {
   const result = await queryOne<Record<string, unknown>>(`
     SELECT t.*, u.full_name, u.email, u.phone

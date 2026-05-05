@@ -5,6 +5,9 @@ import { ApiResponse, Report, User, Technician, ReportStats, PaginationMeta } fr
 // Axios instance with base configuration
 // ---------------------------------------------------------------------------
 
+/**
+ * Calculates the API base URL from environment variables.
+ */
 function apiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_BASE_URL || '/api';
   return raw.replace(/\/$/, '');
@@ -14,6 +17,10 @@ type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 let refreshInFlight: Promise<string | null> | null = null;
 
+/**
+ * Attempts to refresh the access token using the httpOnly refresh cookie.
+ * Prevents multiple simultaneous refresh requests by storing the in-flight promise.
+ */
 async function refreshAccessToken(): Promise<string | null> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
@@ -37,6 +44,10 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshInFlight;
 }
 
+/**
+ * Pre-configured Axios instance for all API calls.
+ * Includes base URL, timeout, and credentials support.
+ */
 const api = axios.create({
   baseURL: apiBaseUrl(),
   timeout: 30_000,
@@ -44,7 +55,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Attach JWT access token to every request
+// Attach JWT access token to every request from localStorage
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('maji_token');
   if (token) {
@@ -53,7 +64,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Refresh session on expired access token (refresh token stays in httpOnly cookie)
+// Response Interceptor: Handles automatic token refresh on 401 AUTH_EXPIRED errors.
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ error: string; code?: string }>) => {
@@ -78,6 +89,7 @@ api.interceptors.response.use(
       }
     }
 
+    // Redirect to login if token is expired/invalid and refresh failed.
     if (code === 'AUTH_EXPIRED' || code === 'AUTH_INVALID') {
       localStorage.removeItem('maji_token');
       localStorage.removeItem('maji_user');
@@ -94,6 +106,9 @@ api.interceptors.response.use(
 // Auth API
 // ---------------------------------------------------------------------------
 
+/**
+ * Authentication API methods for login, registration, and password management.
+ */
 export const authApi = {
   register: async (data: {
     email: string; password: string; full_name: string;
@@ -147,27 +162,9 @@ export const authApi = {
 // Reports API
 // ---------------------------------------------------------------------------
 
-export interface ReportFilters {
-  page?: number;
-  limit?: number;
-  status?: string;
-  category?: string;
-  county?: string;
-  start_date?: string;
-  end_date?: string;
-  lat?: number;
-  lng?: number;
-  radius_km?: number;
-  sort?: string;
-}
-
-export interface ReportStatsFilters {
-  county?: string;
-  status?: string;
-  start_date?: string;
-  end_date?: string;
-}
-
+/**
+ * Helper to normalize numeric report fields returned from Postgres.
+ */
 function normalizeReport(report: any): Report {
   // Postgres often returns numeric/decimal fields as strings, so we normalize
   // to keep the frontend types predictable.
@@ -182,6 +179,9 @@ function normalizeReport(report: any): Report {
   } as Report;
 }
 
+/**
+ * Reports API methods for managing water issue reports and analytics.
+ */
 export const reportsApi = {
   list: async (filters: ReportFilters = {}): Promise<{ reports: Report[]; meta: PaginationMeta }> => {
     // Only include non-empty filter values so we don't send unnecessary query params.
@@ -270,6 +270,9 @@ export const reportsApi = {
 // Technicians API
 // ---------------------------------------------------------------------------
 
+/**
+ * Technicians API methods for managing field staff profiles.
+ */
 export const techniciansApi = {
   list: async (county?: string): Promise<Technician[]> => {
     const res = await api.get<ApiResponse<Technician[]>>('/technicians', {
@@ -288,9 +291,9 @@ export const techniciansApi = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Error message extractor
-// ---------------------------------------------------------------------------
+/**
+ * Utility to extract user-friendly error messages from Axios errors.
+ */
 export function getApiError(err: unknown): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data;
@@ -306,6 +309,9 @@ export function getApiError(err: unknown): string {
   return (err as Error).message || 'An unexpected error occurred.';
 }
 
+/**
+ * Helper to trigger a file download from a Blob (used for CSV/PDF exports).
+ */
 function downloadBlob(blob: Blob, filename: string): void {
   const url = window.URL.createObjectURL(blob);
   const anchor = document.createElement('a');
