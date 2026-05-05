@@ -1,6 +1,18 @@
 import Layout from '../../components/shared/Layout';
 
 export default function TechnicianFAQ() {
+  const operationsGuide = [
+    {
+      title: "Field Workflow",
+      steps: [
+        { label: "Step 1: Receive Assignment", detail: "Get real-time alerts on your dashboard for new tasks assigned to your county." },
+        { label: "Step 2: Review Details", detail: "Check report description, photos, and use the interactive map for precise navigation." },
+        { label: "Step 3: Field Action", detail: "Travel to site, perform repairs, and take notes of any additional infrastructure needs." },
+        { label: "Step 4: Resolve Task", detail: "Click 'Mark Resolved' to update the system and notify the reporting citizen instantly." }
+      ]
+    }
+  ];
+
   const faqData = [
     {
       question: "How do I see my new assignments?",
@@ -35,6 +47,23 @@ export default function TechnicianFAQ() {
           </p>
         </div>
 
+        <div style={styles.guideSection}>
+          {operationsGuide.map((section, idx) => (
+            <div key={idx} style={styles.guideCard}>
+              <h3 style={styles.guideTitle}>{section.title}</h3>
+              <div style={styles.stepsGrid}>
+                {section.steps.map((step, sIdx) => (
+                  <div key={sIdx} style={styles.stepItem}>
+                    <div style={styles.stepLabel}>{step.label}</div>
+                    <div style={styles.stepDetail}>{step.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h3 style={styles.faqHeader}>Frequently Asked Questions</h3>
         <div style={styles.faqList}>
           {faqData.map((item, index) => (
             <div key={index} style={styles.faqItem}>
@@ -70,6 +99,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   introTitle: { margin: '0 0 8px', color: '#10b981', fontSize: '20px' },
   introText: { margin: 0, color: '#d1fae5', fontSize: '15px', lineHeight: '1.6' },
+  guideSection: { marginBottom: '40px' },
+  guideCard: {
+    background: '#1e293b',
+    borderRadius: '16px',
+    padding: '24px',
+    border: '1px solid #334155',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+  },
+  guideTitle: { color: '#38bdf8', fontSize: '18px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px' },
+  stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' },
+  stepItem: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  stepLabel: { color: '#10b981', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase' },
+  stepDetail: { color: '#94a3b8', fontSize: '14px', lineHeight: '1.5' },
+  faqHeader: { color: '#e2e8f0', fontSize: '18px', marginBottom: '20px', paddingLeft: '4px' },
   faqList: { display: 'flex', flexDirection: 'column', gap: '16px' },
   faqItem: {
     padding: '20px',

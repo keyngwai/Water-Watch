@@ -66,6 +66,7 @@ const AdminNav = () => {
     { to: '/admin/map', label: 'Map View' },
     { to: '/admin/technicians', label: 'Technicians' },
     { to: '/admin/help', label: 'Help & FAQ' },
+    { to: '/admin/system-docs', label: 'System Docs' },
   ];
 
   return (
