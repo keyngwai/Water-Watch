@@ -144,24 +144,26 @@ export default function AdminDashboard() {
         onClick={() => navigate('/admin/help')}
         title="Admin Help & FAQ"
       >
-        ❓ Help & FAQ
+        Help & FAQ
       </button>*/}
       <div style={styles.header}>
         <div>
-          <h1 style={styles.title}>County Water Authority Dashboard</h1>
+          <h1 style={styles.title}>County Water Oversight</h1>
           <p style={styles.subtitle}>
-            {user?.county ? `${user.county} County` : 'All Counties'} · {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {user?.county ? `${user.county} County Command` : 'National Infrastructure Overview'} · {new Date().toLocaleDateString('en-KE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={handleRefresh} style={styles.refreshBtn}>
-            Refresh
+            Refresh Data
           </button>
-          <button onClick={() => setShowCreateAdmin(true)} style={styles.createAdminBtn}>
-            Create Admin
-          </button>
+          {user?.is_root_admin && (
+            <button onClick={() => setShowCreateAdmin(true)} style={styles.createAdminBtn}>
+              + New Admin
+            </button>
+          )}
           <button onClick={() => navigate('/admin/map')} style={styles.mapBtn}>
-            View Map
+            Live Map
           </button>
         </div>
       </div>
@@ -170,12 +172,12 @@ export default function AdminDashboard() {
       <div style={styles.kpiGrid}>
         {[
           { label: 'Total Reports', value: totalReports, icon: '', color: '#0369a1', bg: '#eff6ff' },
-          { label: 'Pending Review', value: statusMap['reported'] || 0, icon: '', color: '#d97706', bg: '#fffbeb' },
-          { label: 'In Progress', value: statusMap['in_progress'] || 0, icon: '', color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Resolved', value: statusMap['resolved'] || 0, icon: '', color: '#059669', bg: '#ecfdf5' },
+          { label: 'Awaiting Review', value: statusMap['reported'] || 0, icon: '', color: '#d97706', bg: '#fffbeb' },
+          { label: 'Work In Progress', value: statusMap['in_progress'] || 0, icon: '', color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Successfully Fixed', value: statusMap['resolved'] || 0, icon: '', color: '#059669', bg: '#ecfdf5' },
         ].map((kpi) => (
           <div key={kpi.label} style={{ ...styles.kpiCard, background: kpi.bg, borderColor: `${kpi.color}20` }}>
-            <div style={styles.kpiIcon}>{kpi.icon}</div>
+            <div style={{ ...styles.kpiIcon, fontSize: '24px', marginBottom: '8px' }}>{kpi.icon}</div>
             <div>
               <div style={{ ...styles.kpiValue, color: kpi.color }}>
                 {statsLoading ? '—' : kpi.value.toLocaleString()}
@@ -327,7 +329,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Create Admin Modal */}
-      {showCreateAdmin && (
+      {showCreateAdmin && user?.is_root_admin && (
         <div style={styles.modalOverlay} onClick={() => setShowCreateAdmin(false)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3 style={styles.modalTitle}>Create New Admin Account</h3>
@@ -528,34 +530,12 @@ export default function AdminDashboard() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  header: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: '28px',
-  },
-  title: { fontSize: '28px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '-0.5px', margin: 0 },
-  subtitle: { fontSize: '14px', color: '#64748b', marginTop: '4px' },
-  mapBtn: {
-    padding: '10px 20px',
-    background: '#0369a1',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: 600,
-  },
-  createAdminBtn: {
-    padding: '10px 20px',
-    background: '#059669',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: 600,
-  },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '20px' },
+  title: { fontSize: '28px', fontWeight: 800, color: 'var(--text-color)', margin: 0, letterSpacing: '-0.5px' },
+  subtitle: { fontSize: '14px', color: 'var(--muted-text)', margin: '4px 0 0' },
+  refreshBtn: { padding: '10px 18px', background: 'var(--card-bg)', color: 'var(--text-color)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' },
+  createAdminBtn: { padding: '10px 18px', background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' },
+  mapBtn: { padding: '10px 18px', background: 'var(--accent-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' },
   modalOverlay: {
     position: 'fixed',
     top: 0,
@@ -627,32 +607,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     fontWeight: 600,
   },
-  kpiGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  kpiCard: {
-    borderRadius: '12px',
-    padding: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    border: '1px solid',
-  },
-  kpiIcon: { fontSize: '28px' },
-  kpiValue: { fontSize: '32px', fontWeight: 800, lineHeight: 1 },
-  kpiLabel: { fontSize: '13px', color: '#64748b', marginTop: '4px' },
-  twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' },
-  panel: {
-    background: '#1e293b',
-    borderRadius: '12px',
-    padding: '20px',
-    border: '1px solid #334155',
-    marginBottom: '16px',
-  },
-  panelTitle: { fontSize: '16px', fontWeight: 700, color: '#e2e8f0', marginBottom: '16px' },
+  kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' },
+  kpiCard: { padding: '24px', borderRadius: '20px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '20px' },
+  kpiIcon: { width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' },
+  kpiValue: { fontSize: '24px', fontWeight: 800, lineHeight: 1 },
+  kpiLabel: { fontSize: '13px', color: 'var(--muted-text)', fontWeight: 500, marginTop: '4px' },
+
+  twoCol: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '24px' },
+  panel: { background: 'var(--panel-bg)', borderRadius: '20px', padding: '24px', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
+  panelTitle: { fontSize: '16px', fontWeight: 700, color: 'var(--text-color)', marginBottom: '20px' },
   barRow: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' },
   barTrack: { flex: 1, height: '8px', background: '#334155', borderRadius: '4px', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: '4px', transition: 'width 0.5s ease' },

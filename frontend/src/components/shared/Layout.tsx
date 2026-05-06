@@ -1,11 +1,38 @@
 import { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../context/auth.store';
+import { useThemeStore } from '../../context/theme.store';
 
 interface LayoutProps {
   children: ReactNode;
   title?: string;
 }
+
+const ThemeToggle = () => {
+  const { theme, toggleTheme } = useThemeStore();
+  return (
+    <button
+      onClick={toggleTheme}
+      style={{
+        padding: '6px 10px',
+        borderRadius: '8px',
+        border: '1px solid var(--border-color)',
+        background: 'var(--card-bg)',
+        color: 'var(--text-color)',
+        fontSize: '16px',
+        cursor: 'pointer',
+        marginRight: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
+      }}
+      title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+    >
+      {theme === 'light' ? '🌙' : '☀️'}
+    </button>
+  );
+};
 
 const CitizenNav = () => {
   const location = useLocation();
@@ -20,9 +47,9 @@ const CitizenNav = () => {
   ];
 
   return (
-    <nav style={styles.nav}>
+    <nav style={{ ...styles.nav, background: 'var(--nav-bg)', borderColor: 'var(--border-color)' }}>
       <Link to="/dashboard" style={styles.brand}>
-        <span style={styles.brandText}>Maji Watch</span>
+        <span style={{ ...styles.brandText, color: 'var(--accent-color)' }}>Maji Watch</span>
       </Link>
       <div style={styles.navLinks}>
         {links.map((l) => (
@@ -31,7 +58,8 @@ const CitizenNav = () => {
             to={l.to}
             style={{
               ...styles.navLink,
-              ...(location.pathname === l.to ? styles.navLinkActive : {}),
+              color: location.pathname === l.to ? 'var(--accent-color)' : 'var(--muted-text)',
+              ...(location.pathname === l.to ? { borderBottom: '2px solid var(--accent-color)' } : {}),
             }}
           >
             {l.label}
@@ -39,14 +67,15 @@ const CitizenNav = () => {
         ))}
       </div>
       <div style={styles.navRight}>
-        <span style={styles.userName}>{user?.full_name}</span>
+        <ThemeToggle />
+        <span style={{ ...styles.userName, color: 'var(--text-color)' }}>{user?.full_name}</span>
         <button
           type="button"
           onClick={async () => {
             await logout();
             navigate('/login');
           }}
-          style={styles.logoutBtn}
+          style={{ ...styles.logoutBtn, background: 'var(--accent-color)', color: 'white' }}
         >
           Sign out
         </button>
@@ -66,24 +95,22 @@ const AdminNav = () => {
     { to: '/admin/map', label: 'Map View' },
     { to: '/admin/technicians', label: 'Technicians' },
     { to: '/admin/help', label: 'Help & FAQ' },
-    { to: '/admin/system-docs', label: 'System Docs' },
   ];
 
   return (
-    <nav style={{ ...styles.nav, ...styles.adminNav }}>
-      <Link to="/admin" style={{ ...styles.brand, ...styles.adminBrand }}>
-        <span style={{ ...styles.brandText, ...styles.adminBrandText }}>Maji Admin</span>
+    <nav style={{ ...styles.nav, background: 'var(--nav-bg)', borderColor: 'var(--border-color)' }}>
+      <Link to="/admin" style={styles.brand}>
+        <span style={{ ...styles.brandText, color: 'var(--accent-color)' }}>Maji Admin</span>
       </Link>
-      <div style={{ ...styles.navLinks, ...styles.adminNavLinks }}>
+      <div style={styles.navLinks}>
         {links.map((l) => (
           <Link
             key={l.to}
             to={l.to}
             style={{
               ...styles.navLink,
-              ...styles.adminNavLink,
-              color: location.pathname === l.to ? '#38bdf8' : '#94a3b8',
-              ...(location.pathname === l.to ? { borderBottom: '2px solid #38bdf8' } : {}),
+              color: location.pathname === l.to ? 'var(--accent-color)' : 'var(--muted-text)',
+              ...(location.pathname === l.to ? { borderBottom: '2px solid var(--accent-color)' } : {}),
             }}
           >
             {l.label}
@@ -91,13 +118,14 @@ const AdminNav = () => {
         ))}
       </div>
       <div style={styles.adminActions}>
+        <ThemeToggle />
         <button
           type="button"
           onClick={async () => {
             await logout();
             navigate('/login');
           }}
-          style={{ ...styles.logoutBtn, ...styles.adminLogoutBtn }}
+          style={{ ...styles.logoutBtn, background: 'var(--accent-color)', color: 'white' }}
         >
           Sign out
         </button>
@@ -166,10 +194,10 @@ export default function Layout({ children, title }: LayoutProps) {
   };
 
   return (
-    <div style={(isAdmin || isTech) ? styles.adminWrapper : styles.wrapper}>
+    <div style={styles.wrapper}>
       {getNav()}
       <main style={styles.main}>
-        {title && <h1 style={{ ...styles.pageTitle, color: (isAdmin || isTech) ? '#e2e8f0' : '#0f172a' }}>{title}</h1>}
+        {title && <h1 style={{ ...styles.pageTitle, color: 'var(--text-color)' }}>{title}</h1>}
         {children}
       </main>
     </div>
@@ -179,14 +207,9 @@ export default function Layout({ children, title }: LayoutProps) {
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
     minHeight: '100vh',
-    background: '#f8fafc',
+    background: 'var(--bg-color)',
     fontFamily: "'DM Sans', system-ui, sans-serif",
-  },
-  adminWrapper: {
-    minHeight: '100vh',
-    background: '#0f172a',
-    fontFamily: "'DM Sans', system-ui, sans-serif",
-    color: '#e2e8f0',
+    transition: 'background 0.3s ease',
   },
   nav: {
     display: 'flex',
@@ -302,16 +325,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   main: {
-    maxWidth: '1280px',
+    maxWidth: '1200px',
     margin: '0 auto',
-    padding: '28px 24px 36px',
+    padding: '20px',
   },
   pageTitle: {
-    fontSize: '28px',
+    fontSize: '24px',
     fontWeight: 700,
-    color: '#0f172a',
     marginBottom: '24px',
-    letterSpacing: '-0.5px',
   },
 };
 

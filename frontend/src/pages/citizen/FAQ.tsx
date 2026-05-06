@@ -6,19 +6,19 @@ const CitizenFAQ = () => {
       title: "Quick Start Guide",
       items: [
         {
-          q: "1. Register & Profile",
+          q: "👤 1. Register & Profile",
           a: "Create your account using your email and phone number. Select your county to see relevant local reports and infrastructure updates."
         },
         {
-          q: "2. Reporting an Issue",
+          q: "📝 2. Reporting an Issue",
           a: "Click 'Report Issue'. Select a category (e.g., Pipe Burst), describe the problem, and use the map to pin the exact location."
         },
         {
-          q: "3. Adding Evidence",
+          q: "📸 3. Adding Evidence",
           a: "Upload up to 3 clear photos. Our system automatically strips location metadata from your photos for your privacy and security."
         },
         {
-          q: "4. Track & Upvote",
+          q: "🔔 4. Track & Upvote",
           a: "Check 'My Reports' for live status updates. You can also upvote other reports in your area to help the county prioritize repairs."
         }
       ]
@@ -55,9 +55,9 @@ const CitizenFAQ = () => {
     <Layout title="Citizen Support Center">
       <div style={styles.container}>
         <div style={styles.hero}>
-          <h2 style={styles.heroTitle}>How can we help you today?</h2>
+          <h2 style={styles.heroTitle}>Maji Watch Support</h2>
           <p style={styles.heroText}>
-            Find answers to common questions about reporting, tracking, and community participation.
+            Need help reporting a leak or tracking a fix? We've got you covered.
           </p>
         </div>
 

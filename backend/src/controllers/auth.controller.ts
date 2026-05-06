@@ -151,9 +151,19 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
 
 /**
  * Controller (Admin): Allows existing admins to create new administrative accounts.
+ * Restricted to root admins only.
  */
 export async function createAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    // Check if the requester is a root admin
+    const requesterId = req.user!.sub;
+    const requester = await authService.getUserById(requesterId);
+    
+    if (!requester?.is_root_admin) {
+      sendError(res, 403, 'Access denied. Only root administrators can create other admin accounts.', undefined, 'FORBIDDEN_ROOT_ONLY');
+      return;
+    }
+
     const admin = await authService.createAdminUser({
       ...req.body,
       role: 'admin',

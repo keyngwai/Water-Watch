@@ -1,12 +1,41 @@
 /* Global Responsive Styles for Maji Watch */
 
+:root {
+  --bg-color: #f0f9ff;
+  --text-color: #1e293b;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --nav-bg: #ffffff;
+  --hero-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+  --accent-color: #0369a1;
+  --accent-hover: #0ea5e9;
+  --muted-text: #64748b;
+  --panel-bg: #ffffff;
+  --input-bg: #ffffff;
+}
+
+[data-theme='dark'] {
+  --bg-color: #0f172a;
+  --text-color: #f1f5f9;
+  --card-bg: #1e293b;
+  --border-color: #334155;
+  --nav-bg: #1e293b;
+  --hero-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --accent-color: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --muted-text: #94a3b8;
+  --panel-bg: #1e293b;
+  --input-bg: #0f172a;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif;
-  background: #f0f9ff;
-  color: #1e293b;
+  background: var(--bg-color);
+  color: var(--text-color);
   min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 #root {

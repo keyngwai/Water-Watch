@@ -15,7 +15,7 @@ import { logger } from './logger';
 async function main() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
-  const fullName = process.env.SEED_ADMIN_NAME || 'County Water Authority Admin';
+  const fullName = process.env.SEED_ADMIN_NAME || 'Konahamaru';
   const county = process.env.SEED_ADMIN_COUNTY || 'Nairobi';
 
   if (!email || !password) {
@@ -30,6 +30,7 @@ async function main() {
       full_name: fullName,
       county,
       role: 'admin',
+      is_root_admin: true,
     });
 
     logger.info('Admin account created successfully', {

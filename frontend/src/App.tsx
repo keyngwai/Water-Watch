@@ -24,7 +24,6 @@ import AdminReports from './pages/admin/Reports';
 import AdminMapView from './pages/admin/MapView';
 import AdminTechnicians from './pages/admin/Technicians';
 import AdminFAQ from './pages/admin/FAQ';
-import AdminSystemManual from './pages/admin/SystemManual';
 import CitizenFAQ from './pages/citizen/FAQ';
 import TechnicianDashboard from './pages/technician/Dashboard';
 import TechnicianFAQ from './pages/technician/FAQ';
@@ -125,9 +124,6 @@ export default function App() {
             <ProtectedRoute role="admin"><AdminTechnicians /></ProtectedRoute>
           } />
           <Route path="/admin/help" element={<AdminFAQ />} />
-          <Route path="/admin/system-docs" element={
-            <ProtectedRoute role="admin"><AdminSystemManual /></ProtectedRoute>
-          } />
 
           {/* Technician */}
           <Route path="/technician" element={

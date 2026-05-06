@@ -11,28 +11,16 @@ Maji Watch is a comprehensive water access and quality monitoring system designe
 
 ### System Architecture
 The system follows a classic client-server architecture:
-- **Frontend**: A React-based Single Page Application (SPA).
-- **Backend**: A Node.js Express API.
-- **Database**: PostgreSQL with PostGIS extension for geospatial data.
-- **Storage**: Supabase Storage (or local storage fallback) for image uploads.
-- **Real-time**: Socket.io for live notifications.
+- **Frontend**: A React-based Single Page Application (SPA) built with Vite and Tailwind-inspired custom styles.
+- **Backend**: A Node.js Express API with TypeScript for robust type safety.
+- **Database**: PostgreSQL with **PostGIS** extension for advanced geospatial data operations.
+- **Storage**: Cloud-based storage (Supabase) for image uploads with local fallback.
+- **Real-time**: **Socket.io** for live notifications across all user roles (Admin alerts for new reports, Technician alerts for assignments).
 
-### Backend Documentation
-#### Backend Services
-- **auth.service.ts**: Handles authentication, registration, and token management.
-- **reports.service.ts**: Core business logic for report creation, listing, and status updates.
-- **technicians.service.ts**: Manages field technician profiles and workloads.
-- **upload.service.ts**: Handles image processing and storage.
-
-#### Backend Controllers
-- **auth.controller.ts**: Auth-related HTTP endpoints.
-- **reports.controller.ts**: Report-related HTTP endpoints.
-- **technicians.controller.ts**: Technician-related HTTP endpoints.
-
-### Frontend Documentation
-- **Zustand**: Global state for auth and user profile.
-- **React Query**: Server state management for reports and technicians.
-- **Leaflet**: Interactive mapping for report visualization.
+### Role-Based Portals
+- **Citizen Portal**: For reporting issues, tracking status, and community upvoting.
+- **Admin Dashboard**: For system oversight, data analytics, and technician management.
+- **Technician Portal**: For field staff to receive real-time assignments and resolve infrastructure issues.
 
 ---
 
@@ -47,9 +35,10 @@ The system follows a classic client-server architecture:
 
 #### Reports Service (`backend/src/services/reports.service.ts`)
 - `createReport(input)`: Persists reports with PostGIS geospatial data.
-- `listReports(opts)`: Advanced filtering including proximity search (`ST_DWithin`).
+- `listReports(opts)`: Advanced filtering including proximity search (`ST_DWithin`) and category-based filtering for exports.
 - `updateReportStatus(id, input)`: Transactional status updates with audit logging.
 - `upvoteReport(id, citizenId)`: Idempotent community upvote toggle.
+- `assignTechnician(reportId, technicianId)`: Triggers real-time Socket.io notifications to the assigned technician.
 
 #### Technicians Service (`backend/src/services/technicians.service.ts`)
 - `createTechnician(input)`: Orchestrates user creation and technician profiling.
@@ -61,10 +50,10 @@ The system follows a classic client-server architecture:
 ### Frontend Logic
 
 #### API Service (`frontend/src/services/api.ts`)
-- `authApi`, `reportsApi`, `techniciansApi`: Axios-based modules with automatic JWT refresh interceptors.
+- `authApi`, `reportsApi`, `techniciansApi`: Axios-based modules with automatic JWT refresh interceptors and support for filtered PDF/CSV exports.
 
 #### Auth Store (`frontend/src/context/auth.store.ts`)
-- `useAuthStore`: Zustand store for session hydration and profile management.
+- `useAuthStore`: Zustand store for session hydration, role-based routing, and profile management.
 
 ---
 
@@ -80,10 +69,7 @@ Fragmented reporting and lack of precise location data lead to delayed water inf
 - Empower citizens with mobile/web reporting.
 - Improve accountability via status tracking.
 - Optimize resource allocation for authorities.
-- Enhance transparency via public dashboards.
-
-### 4. Proposed Solution
-Full-stack web app with Citizen Portal, Admin Dashboard, PostGIS mapping, and real-time Socket.io alerts.
+- Enhance transparency via public dashboards and modern UI/UX.
 
 ---
 
@@ -95,22 +81,26 @@ Full-stack web app with Citizen Portal, Admin Dashboard, PostGIS mapping, and re
 - FR1.3: Multi-role support (Citizen, Admin, Technician).
 
 ### 2. Citizen Reporting
-- FR2.1: Water issue submission.
-- FR2.2: GPS and photo support.
-- FR2.4: Unique reference codes.
+- FR2.1: Water issue submission with GPS pinning and photo support.
+- FR2.4: Unique reference codes for tracking.
 
 ### 3. Community Engagement
-- FR3.1: Upvoting reports.
-- FR3.2: Public dashboard.
+- FR3.1: Upvoting reports to signal priority.
+- FR3.2: Public dashboard for community transparency.
 
 ### 4. Admin Management
-- FR4.1: Interactive map visualization.
+- FR4.1: Interactive map visualization (Leaflet).
 - FR4.3: Report verification and resolution workflow.
-- FR4.4: Technician assignment.
+- FR4.4: **Real-time Technician assignment**.
 
-### 6. Analytics
-- FR6.1: Real-time dashboard stats.
-- FR6.2: CSV/PDF exports.
+### 5. Technician Operations
+- FR5.1: Real-time assignment notifications via Socket.io.
+- FR5.2: Field task management and status resolution.
+
+### 6. Analytics & Documentation
+- FR6.1: Real-time dashboard stats and trends.
+- FR6.2: Filtered CSV/PDF exports for reporting.
+- FR6.3: Integrated System Engineering Manuals (SRS/SDD/PRD).
 
 ---
 
@@ -118,16 +108,13 @@ Full-stack web app with Citizen Portal, Admin Dashboard, PostGIS mapping, and re
 
 ### 1. Security
 - NFR1.1: Bcrypt hashing (cost factor 12).
-- NFR1.2: JWT with httpOnly refresh cookies.
-- NFR1.3: Role-Based Access Control (RBAC).
+- NFR1.2: JWT with httpOnly refresh cookies for session security.
+- NFR1.3: Role-Based Access Control (RBAC) enforced at API and UI levels.
+- NFR1.4: EXIF metadata stripping from images for privacy.
 
-### 2. Performance
-- NFR2.1: <300ms API response time.
-- NFR2.2: Support for 100+ concurrent users.
-
-### 3. Scalability
-- NFR3.1: Horizontal scaling of Express API.
-- NFR3.3: External cloud storage (Supabase).
+### 2. UI/UX
+- NFR2.1: Modern, "cool" aesthetic using card-based layouts and gradients.
+- NFR2.2: Responsive design for field technician mobile use.
 
 ---
 
@@ -135,58 +122,46 @@ Full-stack web app with Citizen Portal, Admin Dashboard, PostGIS mapping, and re
 
 ### Goals
 - 30% increase in repair efficiency.
-- 5,000+ active users in 6 months.
 - <24h technician assignment time.
+- 100% transparency for reported issue status.
 
 ### User Personas
-- **Citizen (Jane)**: Needs simple reporting and tracking.
-- **Admin (Peter)**: Needs centralized oversight and workload management.
-- **Technician (Mwangi)**: Needs precise location and issue details.
-
-### Key Features (MVP)
-- Interactive Map, Report Submission, Upvoting, Admin Dashboard, Audit Log, PDF/CSV Export.
+- **Citizen (Jane)**: Needs intuitive reporting and tracking.
+- **Admin (Peter)**: Needs oversight, workload management, and data exports.
+- **Technician (Mwangi)**: Needs precise field data, real-time alerts, and simple resolution tools.
 
 ---
 
 ## 7. Technical Architecture (SDD) (Technical_Architecture_Description.md)
 
 ### Architecture Pattern
-Service-Oriented Architecture (SOA) with Routes -> Controllers -> Services -> Database layers.
+Service-Oriented Architecture (SOA) with distinct layers: Routes -> Controllers -> Services -> Database.
 
 ### Tech Stack
-- React, Node/Express, PostgreSQL/PostGIS, Zustand, React Query, Socket.io, pdf-lib.
+- **Frontend**: React (Vite), Zustand, React Query, Leaflet, Socket.io-client.
+- **Backend**: Node.js, Express, Socket.io, Sharp, pdf-lib.
+- **Database**: PostgreSQL + PostGIS.
 
-### Data Models
-- Users, Reports, Technicians, Admin Actions (Audit Log).
-
-### Security
-- Secure JWT flow, Bcrypt, Input Validation, CORS/Helmet.
-
----
-
-## 8. Testing Plan (Testing_Plan.md)
-
-### Testing Levels
-- **Unit**: Individual functions (Jest/Vitest).
-- **Integration**: Service/DB interaction (Supertest).
-- **E2E**: Full user journeys (Playwright).
-- **Manual**: UI/UX and mobile responsiveness.
-
-### Key Test Cases
-- Registration, Reporting, Assignment, Upvoting, PDF Export, Security/RBAC.
+### Real-time Flow
+1. Citizen submits report -> Admin receives `new_report` event.
+2. Admin assigns technician -> Technician receives `technician_assigned_${id}` event.
 
 ---
 
-## 9. User Manual (User_Manual.md)
+## 8. User Manual & Documentation (User_Manual.md)
 
-### For Citizens
-1. **Register/Login**: Create account and sign in.
-2. **Report**: Use the map or GPS to pin issues and upload photos.
-3. **Track**: Check "My Reports" for status updates.
-4. **Upvote**: Prioritize issues in your community.
+### For Citizens (Support Center)
+1. **Quick Start**: Register, report issues using the map, and upload photos.
+2. **Track**: Monitor "My Reports" for live status updates from the county.
+3. **Engage**: Upvote community issues to prioritize infrastructure repairs.
 
-### For County Admins
-1. **Dashboard**: View high-level KPIs and trends.
-2. **Manage**: Filter and verify reports on the map or list.
-3. **Assign**: Route technicians to verified issues.
-4. **Export**: Generate reports for briefings.
+### For County Admins (Command Center)
+1. **Dashboard**: View real-time KPIs and infrastructure trends.
+2. **Workflow**: Verify reports, assign to technicians, and monitor progress.
+3. **Exports**: Generate filtered PDF/CSV reports for stakeholders.
+4. **System Docs**: Access integrated project documentation via the system repository.
+
+### For Technicians (Field Guide)
+1. **Tasks**: Receive real-time alerts for new assignments.
+2. **Navigation**: Use the interactive map to locate infrastructure issues.
+3. **Resolve**: Mark tasks as resolved instantly from the field.

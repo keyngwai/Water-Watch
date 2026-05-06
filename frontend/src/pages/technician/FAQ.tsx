@@ -5,10 +5,10 @@ export default function TechnicianFAQ() {
     {
       title: "Field Workflow",
       steps: [
-        { label: "Step 1: Receive Assignment", detail: "Get real-time alerts on your dashboard for new tasks assigned to your county." },
-        { label: "Step 2: Review Details", detail: "Check report description, photos, and use the interactive map for precise navigation." },
-        { label: "Step 3: Field Action", detail: "Travel to site, perform repairs, and take notes of any additional infrastructure needs." },
-        { label: "Step 4: Resolve Task", detail: "Click 'Mark Resolved' to update the system and notify the reporting citizen instantly." }
+        { label: "📍 Step 1: Receive Assignment", detail: "Get real-time alerts on your dashboard for new tasks assigned to your county." },
+        { label: "🔍 Step 2: Review Details", detail: "Check report description, photos, and use the interactive map for precise navigation." },
+        { label: "🛠️ Step 3: Field Action", detail: "Travel to site, perform repairs, and take notes of any additional infrastructure needs." },
+        { label: "✅ Step 4: Resolve Task", detail: "Click 'Mark Resolved' to update the system and notify the reporting citizen instantly." }
       ]
     }
   ];
