@@ -1,6 +1,22 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 
 export default function TechnicianFAQ() {
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    setTimeout(() => {
+      toast.success('Message sent! Support will contact you soon.');
+      setContactForm({ name: '', email: '', message: '' });
+      setIsSubmitting(false);
+    }, 1000);
+  };
+
   const operationsGuide = [
     {
       title: "Field Workflow",
@@ -73,12 +89,45 @@ export default function TechnicianFAQ() {
           ))}
         </div>
 
-        <div style={styles.supportBox}>
-          <h3 style={styles.supportTitle}>Need Technical Support?</h3>
-          <p style={styles.supportText}>
-            If you encounter issues with the portal or mapping system while in the field, 
-            please contact the County IT Support desk or your immediate supervisor.
-          </p>
+        <div style={styles.contactSection}>
+          <h3 style={styles.faqHeader}>Need Technical Support?</h3>
+          <div style={styles.contactCard}>
+            <p style={styles.contactIntro}>If you encounter issues with the portal or mapping system, please contact IT Support.</p>
+            <form onSubmit={handleContactSubmit} style={styles.form}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Work Email</label>
+                <input
+                  type="email"
+                  required
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Message / Issue Description</label>
+                <textarea
+                  required
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  style={{ ...styles.input, height: '100px', resize: 'none' }}
+                />
+              </div>
+              <button type="submit" disabled={isSubmitting} style={styles.submitBtn}>
+                {isSubmitting ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </Layout>
@@ -122,14 +171,34 @@ const styles: Record<string, React.CSSProperties> = {
   },
   question: { margin: '0 0 10px', color: '#f1f5f9', fontSize: '16px', fontWeight: 600 },
   answer: { margin: 0, color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' },
-  supportBox: {
-    marginTop: '40px',
+  contactSection: { marginTop: '40px' },
+  contactCard: {
     padding: '24px',
-    background: '#0f172a',
+    background: '#1e293b',
     borderRadius: '12px',
-    border: '1px dashed #334155',
-    textAlign: 'center',
+    border: '1px solid #334155',
   },
-  supportTitle: { margin: '0 0 8px', color: '#e2e8f0', fontSize: '16px' },
-  supportText: { margin: 0, color: '#64748b', fontSize: '14px' },
+  contactIntro: { fontSize: '14px', color: '#94a3b8', marginBottom: '20px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '13px', fontWeight: 600, color: '#e2e8f0' },
+  input: {
+    padding: '10px 12px',
+    background: '#0f172a',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+    fontSize: '14px',
+    color: '#f1f5f9',
+    outline: 'none',
+  },
+  submitBtn: {
+    padding: '12px',
+    background: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 700,
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
 };

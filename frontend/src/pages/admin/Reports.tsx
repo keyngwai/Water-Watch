@@ -6,7 +6,7 @@ import Layout from '../../components/shared/Layout';
 import { StatusBadge, CategoryBadge, SeverityBadge } from '../../components/shared/Badges';
 import { reportsApi, techniciansApi, getApiError } from '../../services/api';
 import { useAuthStore } from '../../context/auth.store';
-import { Report, ReportStatus, STATUS_LABELS } from '../../types';
+import { Report, ReportStatus, STATUS_LABELS, CATEGORY_LABELS } from '../../types';
 
 const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
   { value: 'verified', label: 'Verify report' },
@@ -41,29 +41,36 @@ function AssignTechnicianModal({
       comment: comment || undefined,
       is_public: isPublic,
     }),
-    onSuccess: () => {
-      toast.success('Technician assignment updated.');
-      onSuccess();
-      onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
   });
+
+  const handleAssign = () => {
+    mutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Technician assignment updated.');
+        onSuccess();
+        onClose();
+      },
+      onError: (err: any) => {
+        getApiError(err).then((msg) => toast.error(msg));
+      },
+    });
+  };
 
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <h3 style={{ color: '#e2e8f0', margin: 0, fontSize: '18px' }}>Assign Technician</h3>
+          <h3 style={{ color: 'var(--text-color)', margin: 0, fontSize: '18px' }}>Assign Technician</h3>
           <button onClick={onClose} style={styles.closeBtn}>×</button>
         </div>
 
         <div style={styles.modalRef}>
-          <span style={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace' }}>
+          <span style={{ color: 'var(--muted-text)', fontSize: '12px', fontFamily: 'monospace' }}>
             {report.reference_code}
           </span>
           <StatusBadge status={report.status} />
         </div>
-        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 20px' }}>{report.title}</p>
+        <p style={{ color: 'var(--text-color)', fontSize: '14px', margin: '0 0 20px' }}>{report.title}</p>
 
         <label style={styles.label}>Technician</label>
         <select
@@ -101,7 +108,7 @@ function AssignTechnicianModal({
         <div style={styles.modalActions}>
           <button onClick={onClose} style={styles.cancelBtn}>Cancel</button>
           <button
-            onClick={() => mutation.mutate()}
+            onClick={handleAssign}
             disabled={!technicianId || mutation.isPending}
             style={{ ...styles.saveBtn, opacity: !technicianId ? 0.5 : 1 }}
           >
@@ -139,29 +146,36 @@ function UpdateStatusModal({
       is_public: isPublic,
       technician_id: technicianId || undefined,
     }),
-    onSuccess: () => {
-      toast.success(`Report updated to "${STATUS_LABELS[newStatus as ReportStatus]}"`);
-      onSuccess();
-      onClose();
-    },
-    onError: (err) => toast.error(getApiError(err)),
   });
+
+  const handleUpdate = () => {
+    mutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success(`Report updated to "${STATUS_LABELS[newStatus as ReportStatus]}"`);
+        onSuccess();
+        onClose();
+      },
+      onError: (err: any) => {
+        getApiError(err).then((msg) => toast.error(msg));
+      },
+    });
+  };
 
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <h3 style={{ color: '#e2e8f0', margin: 0, fontSize: '18px' }}>Update Report Status</h3>
+          <h3 style={{ color: 'var(--text-color)', margin: 0, fontSize: '18px' }}>Update Report Status</h3>
           <button onClick={onClose} style={styles.closeBtn}>×</button>
         </div>
 
         <div style={styles.modalRef}>
-          <span style={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace' }}>
+          <span style={{ color: 'var(--muted-text)', fontSize: '12px', fontFamily: 'monospace' }}>
             {report.reference_code}
           </span>
           <StatusBadge status={report.status} />
         </div>
-        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 20px' }}>{report.title}</p>
+        <p style={{ color: 'var(--text-color)', fontSize: '14px', margin: '0 0 20px' }}>{report.title}</p>
 
         <label style={styles.label}>New Status</label>
         <div style={styles.statusOptions}>
@@ -171,9 +185,9 @@ function UpdateStatusModal({
               onClick={() => setNewStatus(opt.value)}
               style={{
                 ...styles.statusOpt,
-                borderColor: newStatus === opt.value ? '#0369a1' : '#334155',
-                background: newStatus === opt.value ? '#0369a120' : '#1e293b',
-                color: newStatus === opt.value ? '#38bdf8' : '#94a3b8',
+                borderColor: newStatus === opt.value ? 'var(--accent-color)' : 'var(--border-color)',
+                background: newStatus === opt.value ? 'color-mix(in srgb, var(--accent-color), transparent 85%)' : 'var(--card-bg)',
+                color: newStatus === opt.value ? 'var(--accent-color)' : 'var(--muted-text)',
               }}
             >
               {opt.label}
@@ -221,11 +235,11 @@ function UpdateStatusModal({
         <div style={styles.modalActions}>
           <button onClick={onClose} style={styles.cancelBtn}>Cancel</button>
           <button
-            onClick={() => mutation.mutate()}
+            onClick={handleUpdate}
             disabled={!newStatus || mutation.isPending}
             style={{ ...styles.saveBtn, opacity: !newStatus ? 0.5 : 1 }}
           >
-            {mutation.isPending ? 'Saving...' : 'Update Status'}
+            {mutation.isPending ? 'Updating...' : 'Update Status'}
           </button>
         </div>
       </div>
@@ -274,7 +288,7 @@ export default function AdminReports() {
   if (!user) {
     return (
       <Layout title="Admin access required">
-        <div style={{ padding: '24px', color: '#64748b', fontSize: '14px' }}>
+        <div style={{ padding: '24px', color: 'var(--muted-text)', fontSize: '14px' }}>
           Please sign in to access the admin dashboard.
         </div>
       </Layout>
@@ -284,7 +298,7 @@ export default function AdminReports() {
   if (user.role !== 'admin') {
     return (
       <Layout title="Admin access required">
-        <div style={{ padding: '24px', color: '#64748b', fontSize: '14px' }}>
+        <div style={{ padding: '24px', color: 'var(--muted-text)', fontSize: '14px' }}>
           You are signed in as a {user.role}. Admin access is required to view this page.
         </div>
       </Layout>
@@ -294,7 +308,7 @@ export default function AdminReports() {
   if (isError) {
     return (
       <Layout title="All Reports">
-        <div style={{ padding: '24px', color: '#f87171', fontSize: '14px' }}>
+        <div style={{ padding: '24px', color: 'var(--accent-color)', fontSize: '14px' }}>
           Failed to load reports: {(error as any)?.message || 'Unknown error'}
         </div>
       </Layout>
@@ -375,10 +389,24 @@ export default function AdminReports() {
           ))}
         </select>
 
-        {/* County */}
+        {/* Category */}
+        <select
+          style={styles.compactSelect}
+          value={filters.category}
+          onChange={(e) => setFilter('category', e.target.value)}
+        >
+          <option value="">All Categories</option>
+          {Object.entries(CATEGORY_LABELS).map(([val, label]) => (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          ))}
+        </select>
+
+        {/* County (Location) */}
         <input
           style={styles.compactInput}
-          placeholder="County"
+          placeholder="Location"
           value={filters.county}
           onChange={(e) => setFilter('county', e.target.value)}
         />
@@ -422,7 +450,8 @@ export default function AdminReports() {
               });
               toast.success('CSV export downloaded.');
             } catch (err) {
-              toast.error(getApiError(err));
+              const msg = await getApiError(err);
+              toast.error(msg);
             }
           }}
           style={styles.compactBtn}
@@ -443,7 +472,8 @@ export default function AdminReports() {
               });
               toast.success('PDF export downloaded.');
             } catch (err) {
-              toast.error(getApiError(err));
+              const msg = await getApiError(err);
+              toast.error(msg);
             }
           }}
           style={styles.compactBtn}
@@ -473,12 +503,12 @@ export default function AdminReports() {
             <tbody>
               {data?.reports.map((report) => (
                 <tr key={report.id} style={styles.row}>
-                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '11px', color: '#64748b' }}>
+                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '11px', color: 'var(--muted-text)' }}>
                     {report.reference_code}
                   </td>
                   <td style={styles.td}>
                     <span
-                      style={{ fontSize: '13px', fontWeight: 500, color: '#fff', cursor: 'pointer', textDecoration: 'underline' }}
+                      style={{ fontSize: '13px', fontWeight: 500, color: 'var(--accent-color)', cursor: 'pointer', textDecoration: 'underline' }}
                       onClick={() => navigate(`/reports/${report.id}`)}
                     >
                       {report.title.length > 40 ? report.title.substring(0, 40) + '...' : report.title}
@@ -486,28 +516,28 @@ export default function AdminReports() {
                   </td>
                   <td style={styles.td}><CategoryBadge category={report.category} /></td>
                   <td style={styles.td}><SeverityBadge severity={report.severity} /></td>
-                  <td style={{ ...styles.td, fontSize: '12px', color: '#94a3b8' }}>
+                  <td style={{ ...styles.td, fontSize: '12px', color: 'var(--muted-text)' }}>
                     {report.county}{report.sub_county ? `, ${report.sub_county}` : ''}
                   </td>
-                  <td style={{ ...styles.td, fontSize: '12px', color: '#94a3b8' }}>
+                  <td style={{ ...styles.td, fontSize: '12px', color: 'var(--muted-text)' }}>
                     {report.citizen_name || '—'}
                   </td>
-                  <td style={{ ...styles.td, fontSize: '12px', color: '#94a3b8' }}>
+                  <td style={{ ...styles.td, fontSize: '12px', color: 'var(--muted-text)' }}>
                     {report.technician_name ? (
                       <div>
                         <div>{report.technician_name}</div>
                         {report.technician_job_role && (
-                          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--muted-text)', marginTop: '2px' }}>
                             {report.technician_job_role}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <span style={{ color: '#475569' }}>Unassigned</span>
+                      <span style={{ color: 'var(--muted-text)', opacity: 0.7 }}>Unassigned</span>
                     )}
                   </td>
                   <td style={styles.td}><StatusBadge status={report.status} /></td>
-                  <td style={{ ...styles.td, fontSize: '11px', color: '#64748b' }}>
+                  <td style={{ ...styles.td, fontSize: '11px', color: 'var(--muted-text)' }}>
                     {new Date(report.created_at).toLocaleDateString('en-KE')}
                   </td>
                   <td style={styles.td}>
@@ -544,7 +574,7 @@ export default function AdminReports() {
           >
             ← Prev
           </button>
-          <span style={{ color: '#64748b', fontSize: '13px' }}>
+          <span style={{ color: 'var(--muted-text)', fontSize: '13px' }}>
             Page {data.meta.page} of {data.meta.totalPages}
           </span>
           <button
@@ -571,14 +601,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sectionTitle: {
     margin: 0,
-    fontSize: '22px',
+    fontSize: '24px',
     fontWeight: 700,
-    color: '#e2e8f0',
-    letterSpacing: '-0.3px',
+    color: 'var(--text-color)',
+    letterSpacing: '-0.5px',
   },
   filterCard: {
-    background: '#111827',
-    border: '1px solidrgb(47, 128, 242)',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '14px',
     marginBottom: '14px',
@@ -594,16 +624,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-    color: '#94a3b8',
+    color: 'var(--muted-text)',
     fontSize: '12px',
     fontWeight: 600,
   },
   dateInput: {
     padding: '6px 8px',
     borderRadius: '6px',
-    border: '1px solid #334155',
-    background: '#0f172a',
-    color: '#e2e8f0',
+    border: '1px solid var(--border-color)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
     fontSize: '12px',
     minWidth: '130px',
     height: '32px',
@@ -611,16 +641,16 @@ const styles: Record<string, React.CSSProperties> = {
   clearBtn: {
     padding: '6px 10px',
     background: 'transparent',
-    border: '1px solid #475569',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
-    color: '#94a3b8',
+    color: 'var(--muted-text)',
     cursor: 'pointer',
     fontSize: '12px',
     fontWeight: 600,
     height: '32px',
   },
   errorText: {
-    color: '#fca5a5',
+    color: '#f87171',
     fontSize: '12px',
     marginTop: '8px',
   },
@@ -629,8 +659,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '6px',
     padding: '6px',
-    background: '#111827',
-    border: '1px solid #1f2937',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '10px',
     marginBottom: '14px',
   
@@ -640,10 +670,10 @@ const styles: Record<string, React.CSSProperties> = {
   filterSelect: {
     height: '32px',
     padding: '4px 10px',
-    background: '#0f172a',
-    color: '#fff',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
     borderRadius: '6px',
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
   
     width: 'auto',
     flex: '0 0 auto', // 🔥 THIS STOPS STRETCHING
@@ -651,36 +681,36 @@ const styles: Record<string, React.CSSProperties> = {
   filterInput: {
     padding: '6px 10px',
     borderRadius: '6px',
-    border: '1px solid #334155',
-    background: '#0f172a',
-    color: '#e2e8f0',
+    border: '1px solid var(--border-color)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
     fontSize: '12px',
     height: '32px',
     width: '150px',
   },
   tableContainer: {
-    background: '#1e293b',
+    background: 'var(--panel-bg)',
     borderRadius: '12px',
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     overflow: 'auto',
     marginBottom: '16px',
   },
-  loading: { padding: '40px', textAlign: 'center', color: '#64748b' },
+  loading: { padding: '40px', textAlign: 'center', color: 'var(--muted-text)' },
   table: { width: '100%', borderCollapse: 'collapse', minWidth: '900px' },
   th: {
     padding: '12px 14px',
     textAlign: 'left',
     fontSize: '11px',
     fontWeight: 700,
-    color: '#64748b',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
-    borderBottom: '1px solid #334155',
-    background: '#0f172a',
+    borderBottom: '1px solid var(--border-color)',
+    background: 'var(--bg-color)',
     whiteSpace: 'nowrap',
   },
-  row: { borderBottom: '1px solid #1e293b60' },
-  td: { padding: '12px 14px', verticalAlign: 'middle' },
+  row: { borderBottom: '1px solid var(--border-color)' },
+  td: { padding: '12px 14px', verticalAlign: 'middle', color: 'var(--text-color)' },
   actionBtn: {
     padding: '6px 10px',
     background: '#0369a1',
@@ -694,9 +724,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   assignBtn: {
     padding: '6px 10px',
-    background: '#334155',
-    color: '#e2e8f0',
-    border: '1px solid #475569',
+    background: 'var(--panel-bg)',
+    color: 'var(--text-color)',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '12px',
@@ -712,9 +742,9 @@ const styles: Record<string, React.CSSProperties> = {
   pagination: { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center', padding: '16px' },
   pageBtn: {
     padding: '8px 16px',
-    background: '#1e293b',
-    color: '#e2e8f0',
-    border: '1px solid #334155',
+    background: 'var(--panel-bg)',
+    color: 'var(--text-color)',
+    border: '1px solid var(--border-color)',
     borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '13px',
@@ -731,9 +761,9 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(4px)',
   },
   modal: {
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: '16px',
-    border: '1px solid #334155',
+    border: '1px solid var(--border-color)',
     padding: '28px',
     width: '100%',
     maxWidth: '500px',
@@ -749,14 +779,14 @@ const styles: Record<string, React.CSSProperties> = {
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#64748b',
+    color: 'var(--muted-text)',
     fontSize: '24px',
     cursor: 'pointer',
     padding: '0',
     lineHeight: '1',
   },
   modalRef: { display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '6px' },
-  label: { display: 'block', fontSize: '13px', fontWeight: 600, color: '#94a3b8', marginBottom: '8px' },
+  label: { display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--muted-text)', marginBottom: '8px' },
   statusOptions: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' },
   statusOpt: {
     padding: '10px 14px',
@@ -772,9 +802,9 @@ const styles: Record<string, React.CSSProperties> = {
     height: '30px',
     padding: '0 8px',
     fontSize: '12px',
-    background: '#0f172a',
-    color: '#e2e8f0',
-    border: '1px solid #334155',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
   
     width: '140px',
@@ -785,7 +815,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0 8px',
     fontSize: '11px',
     borderRadius: '6px',
-    border: '1px solid #475569',
+    border: '1px solid var(--border-color)',
     background: '#0369a1',
     color: 'white',
     cursor: 'pointer',
@@ -811,16 +841,16 @@ const styles: Record<string, React.CSSProperties> = {
   countText: {
     marginLeft: 'auto',
     fontSize: '12px',
-    color: '#64748b',
+    color: 'var(--muted-text)',
     whiteSpace: 'nowrap',
   },
   compactInput: {
     height: '30px',
     padding: '0 8px',
     fontSize: '12px',
-    background: '#0f172a',
-    color: '#e2e8f0',
-    border: '1px solid #334155',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
+    border: '1px solid var(--border-color)',
     borderRadius: '6px',
   
     width: '130px',
@@ -830,9 +860,9 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     padding: '10px 12px',
     borderRadius: '8px',
-    border: '1px solid #334155',
-    background: '#0f172a',
-    color: '#e2e8f0',
+    border: '1px solid var(--border-color)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color)',
     fontSize: '13px',
     marginBottom: '16px',
     boxSizing: 'border-box',
@@ -843,15 +873,15 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     fontSize: '13px',
-    color: '#94a3b8',
+    color: 'var(--muted-text)',
     cursor: 'pointer',
     marginBottom: '20px',
   },
   modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
   cancelBtn: {
     padding: '10px 20px',
-    background: '#334155',
-    color: '#94a3b8',
+    background: 'var(--bg-color)',
+    color: 'var(--muted-text)',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
@@ -890,7 +920,7 @@ if (window.innerWidth <= 900) {
   styles.filterCard.position = 'sticky';
   styles.filterCard.top = '72px';
   styles.filterCard.zIndex = 20;
-  styles.filterCard.background = '#111827f2';
+  styles.filterCard.background = 'var(--card-bg)';
   styles.filterCard.backdropFilter = 'blur(4px)';
 
   styles.dateFilters.flexWrap = 'nowrap';

@@ -15,21 +15,18 @@ export default function TechnicianDashboard() {
   const [filterStatus, setFilterStatus] = useState<'in_progress' | 'verified' | 'all'>('in_progress');
 
   // Load assignments for the current technician
-  // Note: We need a way to filter by technician. If reportsApi.list doesn't support it directly, 
-  // we might need a dedicated endpoint or ensure the backend filters by the logged-in tech ID.
   const { data, isLoading } = useQuery({
-    queryKey: ['technician-assignments', filterStatus],
+    queryKey: ['technician-assignments', filterStatus, user?.technician_id],
     queryFn: () => reportsApi.list({ 
-      // We assume the backend list endpoint or a new one can handle assignments.
-      // For now, we'll use the public list with a filter if possible, 
-      // or implement a filter on the returned data.
       status: filterStatus === 'all' ? undefined : filterStatus as any,
+      assigned_to: user?.technician_id,
     }),
+    enabled: !!user?.technician_id,
   });
 
-  // Filter local data to only show reports assigned to THIS technician
-  // In a real app, the backend should do this for security/performance.
-  const assignments = (data?.reports || []).filter((r: any) => r.assigned_to === user?.id) as Report[];
+  // Since we're filtering on the server now, we can just use data?.reports directly.
+  // We keep a safety filter just in case, but using technician_id.
+  const assignments = (data?.reports || []) as Report[];
 
   const resolveMutation = useMutation({
     mutationFn: (reportId: string) => reportsApi.updateStatus(reportId, { status: 'resolved' }),
@@ -37,8 +34,15 @@ export default function TechnicianDashboard() {
       toast.success('Task marked as resolved!');
       queryClient.invalidateQueries({ queryKey: ['technician-assignments'] });
     },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: (err) => {
+      getApiError(err).then(msg => toast.error(msg));
+    },
   });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['technician-assignments'] });
+    toast.success('Assignments updated');
+  };
 
   return (
     <Layout title="Technician Portal">
@@ -47,25 +51,30 @@ export default function TechnicianDashboard() {
           <h2 style={styles.welcome}>Welcome, {user?.full_name}</h2>
           <p style={styles.subtext}>Manage your active field assignments</p>
         </div>
-        <div style={styles.tabs}>
-          <button 
-            onClick={() => setFilterStatus('in_progress')}
-            style={{ ...styles.tab, ...(filterStatus === 'in_progress' ? styles.activeTab : {}) }}
-          >
-            Active
+        <div style={styles.rightHeader}>
+          <button onClick={handleRefresh} style={styles.refreshBtn}>
+            Refresh Tasks
           </button>
-          <button 
-            onClick={() => setFilterStatus('all')}
-            style={{ ...styles.tab, ...(filterStatus === 'all' ? styles.activeTab : {}) }}
-          >
-            All
-          </button>
+          <div style={styles.tabs}>
+            <button 
+              onClick={() => setFilterStatus('in_progress')}
+              style={{ ...styles.tab, ...(filterStatus === 'in_progress' ? styles.activeTab : {}) }}
+            >
+              Active
+            </button>
+            <button 
+              onClick={() => setFilterStatus('all')}
+              style={{ ...styles.tab, ...(filterStatus === 'all' ? styles.activeTab : {}) }}
+            >
+              All
+            </button>
+          </div>
         </div>
       </div>
 
       <div style={styles.grid}>
         {isLoading ? (
-          <p style={{ color: '#94a3b8' }}>Loading assignments...</p>
+          <p style={{ color: 'var(--muted-text)', padding: '40px', textAlign: 'center' }}>Loading assignments...</p>
         ) : assignments.length === 0 ? (
           <div style={styles.emptyState}>
             <p>No assignments found for your account.</p>
@@ -121,24 +130,36 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     marginBottom: '24px',
   },
-  welcome: { margin: 0, color: '#e2e8f0', fontSize: '24px' },
-  subtext: { margin: '4px 0 0', color: '#94a3b8', fontSize: '14px' },
-  tabs: { display: 'flex', gap: '8px', background: '#1e293b', padding: '4px', borderRadius: '8px' },
+  welcome: { margin: 0, color: 'var(--text-color)', fontSize: '24px' },
+  subtext: { margin: '4px 0 0', color: 'var(--muted-text)', fontSize: '14px' },
+  rightHeader: { display: 'flex', alignItems: 'center', gap: '16px' },
+  refreshBtn: {
+    padding: '8px 16px',
+    background: 'var(--card-bg)',
+    color: 'var(--muted-text)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  tabs: { display: 'flex', gap: '8px', background: 'var(--card-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' },
   tab: {
     padding: '6px 16px',
     border: 'none',
     background: 'transparent',
-    color: '#94a3b8',
+    color: 'var(--muted-text)',
     borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 600,
   },
-  activeTab: { background: '#0369a1', color: 'white' },
+  activeTab: { background: 'var(--accent-color)', color: 'white' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' },
   card: {
-    background: '#1e293b',
-    border: '1px solid #334155',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-color)',
     borderRadius: '12px',
     padding: '20px',
     display: 'flex',
@@ -146,20 +167,20 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '12px',
   },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  refCode: { fontFamily: 'monospace', color: '#64748b', fontSize: '12px' },
-  cardTitle: { margin: 0, color: '#f1f5f9', fontSize: '16px', fontWeight: 600 },
+  refCode: { fontFamily: 'monospace', color: 'var(--muted-text)', fontSize: '12px' },
+  cardTitle: { margin: 0, color: 'var(--text-color)', fontSize: '16px', fontWeight: 600 },
   badges: { display: 'flex', gap: '8px' },
-  locationInfo: { padding: '12px', background: '#0f172a', borderRadius: '8px' },
-  locationName: { margin: 0, color: '#e2e8f0', fontSize: '13px', fontWeight: 500 },
-  countyText: { margin: '4px 0 0', color: '#64748b', fontSize: '11px' },
+  locationInfo: { padding: '12px', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' },
+  locationName: { margin: 0, color: 'var(--text-color)', fontSize: '13px', fontWeight: 500 },
+  countyText: { margin: '4px 0 0', color: 'var(--muted-text)', fontSize: '11px' },
   actions: { display: 'flex', gap: '10px', marginTop: '8px' },
   viewBtn: {
     flex: 1,
     padding: '10px',
     borderRadius: '8px',
-    border: '1px solid #475569',
+    border: '1px solid var(--border-color)',
     background: 'transparent',
-    color: '#e2e8f0',
+    color: 'var(--text-color)',
     fontSize: '13px',
     fontWeight: 600,
     cursor: 'pointer',
@@ -179,8 +200,9 @@ const styles: Record<string, React.CSSProperties> = {
     gridColumn: '1 / -1',
     padding: '40px',
     textAlign: 'center',
-    background: '#1e293b',
+    background: 'var(--card-bg)',
     borderRadius: '12px',
-    color: '#94a3b8',
+    color: 'var(--muted-text)',
+    border: '1px solid var(--border-color)',
   }
 };

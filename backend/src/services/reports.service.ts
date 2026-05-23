@@ -35,6 +35,7 @@ export interface ListReportsOptions {
   start_date?: string;
   end_date?: string;
   citizen_id?: string;    // For citizens to see their own reports
+  assigned_to?: string;   // For technicians to see their assignments
   lat?: number;           // For proximity search
   lng?: number;
   radius_km?: number;
@@ -164,6 +165,13 @@ export async function listReports(
     conditions.push(`r.citizen_id = $${paramIdx++}`);
     params.push(opts.citizen_id);
   }
+  if (opts.assigned_to) {
+    // Override is_public filter when technician views their assignments
+    const publicIdx = conditions.indexOf('r.is_public = TRUE');
+    if (publicIdx !== -1) conditions.splice(publicIdx, 1);
+    conditions.push(`r.assigned_to = $${paramIdx++}`);
+    params.push(opts.assigned_to);
+  }
 
   // Proximity filter using PostGIS
   if (opts.lat !== undefined && opts.lng !== undefined && opts.radius_km) {
@@ -193,7 +201,7 @@ export async function listReports(
     query<Record<string, unknown>>(`
       SELECT r.id, r.reference_code, r.category, r.severity, r.title,
              r.latitude, r.longitude, r.location_name, r.county, r.sub_county, r.ward,
-             r.status, r.upvote_count, r.view_count, r.created_at, r.updated_at,
+             r.status, r.upvote_count, r.view_count, r.assigned_to, r.created_at, r.updated_at,
              u.full_name as citizen_name,
              (SELECT public_url FROM report_images WHERE report_id = r.id AND is_primary = TRUE LIMIT 1) as primary_image
       FROM reports r

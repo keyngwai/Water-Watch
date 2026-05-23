@@ -24,7 +24,7 @@ export default function ReportDetail() {
   const upvoteMutation = useMutation({
     mutationFn: () => reportsApi.upvote(id!),
     onSuccess: () => { toast.success('Vote recorded!'); refetch(); },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: async (err) => toast.error(await getApiError(err)),
   });
 
   const { data: technicians } = useQuery({
@@ -52,7 +52,7 @@ export default function ReportDetail() {
       setAssignComment('');
       refetch();
     },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: async (err) => toast.error(await getApiError(err)),
   });
 
   if (isLoading) {

@@ -14,16 +14,24 @@ export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   min: parseInt(process.env.DB_POOL_MIN || '2'),
   max: parseInt(process.env.DB_POOL_MAX || '10'),
-  idleTimeoutMillis: 30_000,
+  idleTimeoutMillis: 10_000, // Reduced from 30s to 10s to clear stale connections faster
   connectionTimeoutMillis: 5_000,
+  // keepAlive helps prevent ECONNRESET by sending periodic pings to the server
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
   ssl: isProduction || process.env.DB_SSL === 'true'
     ? { rejectUnauthorized: false }
     : false,
 });
 
-// Emit a warning if the pool has exhausted connections — useful for scaling decisions
+// Handle pool errors globally to prevent unhandled rejections
 pool.on('error', (err) => {
-  logger.error('Unexpected PostgreSQL pool error', { error: err.message });
+  // Check for ECONNRESET specifically
+  if ((err as any).code === 'ECONNRESET' || (err as any).message?.includes('ECONNRESET')) {
+    logger.warn('PostgreSQL pool connection reset (ECONNRESET). The pool will recover automatically.', { error: err.message });
+  } else {
+    logger.error('Unexpected PostgreSQL pool error', { error: err.message });
+  }
 });
 
 // ---------------------------------------------------------------------------

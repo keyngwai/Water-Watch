@@ -43,6 +43,7 @@ const CitizenNav = () => {
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/report/new', label: 'Report Issue' },
     { to: '/my-reports', label: 'My Reports' },
+    { to: '/map', label: 'Community Map' },
     { to: '/help', label: 'Help & FAQ' },
   ];
 
@@ -68,7 +69,9 @@ const CitizenNav = () => {
       </div>
       <div style={styles.navRight}>
         <ThemeToggle />
-        <span style={{ ...styles.userName, color: 'var(--text-color)' }}>{user?.full_name}</span>
+        <Link to="/profile" style={{ ...styles.userName, color: 'var(--text-color)', textDecoration: 'none' }}>
+          {user?.full_name}
+        </Link>
         <button
           type="button"
           onClick={async () => {
@@ -86,7 +89,7 @@ const CitizenNav = () => {
 
 const AdminNav = () => {
   const location = useLocation();
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const navigate = useNavigate();
 
   const links = [
@@ -119,6 +122,9 @@ const AdminNav = () => {
       </div>
       <div style={styles.adminActions}>
         <ThemeToggle />
+        <Link to="/profile" style={{ ...styles.userName, color: 'var(--text-color)', textDecoration: 'none', marginRight: '12px' }}>
+          {user?.full_name}
+        </Link>
         <button
           type="button"
           onClick={async () => {
@@ -145,7 +151,7 @@ const TechnicianNav = () => {
   ];
 
   return (
-    <nav style={{ ...styles.nav, background: '#0f172a', borderColor: '#1e293b' }}>
+    <nav style={{ ...styles.nav, background: 'var(--nav-bg)', borderColor: 'var(--border-color)' }}>
       <Link to="/technician" style={styles.brand}>
         <span style={{ ...styles.brandText, color: '#10b981' }}>Tech Portal</span>
       </Link>
@@ -156,8 +162,8 @@ const TechnicianNav = () => {
             to={l.to}
             style={{
               ...styles.navLink,
-              color: location.pathname === l.to ? '#10b981' : '#94a3b8',
-              background: location.pathname === l.to ? '#064e3b' : 'transparent',
+              color: location.pathname === l.to ? '#10b981' : 'var(--muted-text)',
+              background: location.pathname === l.to ? '#10b98110' : 'transparent',
               borderBottom: location.pathname === l.to ? '2px solid #10b981' : 'none',
             }}
           >
@@ -166,14 +172,17 @@ const TechnicianNav = () => {
         ))}
       </div>
       <div style={styles.navRight}>
-        <span style={{ ...styles.userName, color: '#e2e8f0' }}>{user?.full_name}</span>
+        <ThemeToggle />
+        <Link to="/profile" style={{ ...styles.userName, color: 'var(--text-color)', textDecoration: 'none' }}>
+          {user?.full_name}
+        </Link>
         <button
           type="button"
           onClick={async () => {
             await logout();
             navigate('/login');
           }}
-          style={{ ...styles.logoutBtn, background: '#1e293b', color: '#94a3b8', borderColor: '#334155' }}
+          style={{ ...styles.logoutBtn, background: 'var(--accent-color)', color: 'white' }}
         >
           Sign out
         </button>
@@ -217,8 +226,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     padding: '10px 20px',
     minHeight: '62px',
-    background: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
+    background: 'var(--nav-bg)',
+    borderBottom: '1px solid var(--border-color)',
     position: 'sticky',
     top: 0,
     zIndex: 100,
@@ -235,12 +244,12 @@ const styles: Record<string, React.CSSProperties> = {
   brandText: {
     fontWeight: 700,
     fontSize: '18px',
-    color: '#0369a1',
+    color: 'var(--accent-color)',
     letterSpacing: '-0.3px',
   },
   adminNav: {
-    background: '#0f172a',
-    borderColor: '#1e293b',
+    background: 'var(--nav-bg)',
+    borderColor: 'var(--border-color)',
     padding: '6px 12px',
     minHeight: '48px',
     gap: '8px',
@@ -250,7 +259,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginRight: '6px',
   },
   adminBrandText: {
-    color: '#38bdf8',
+    color: 'var(--accent-color)',
     fontSize: '13px',
     fontWeight: 700,
     whiteSpace: 'nowrap',
@@ -271,7 +280,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navLink: {
     padding: '8px 16px',
-    color: '#64748b',
+    color: 'var(--muted-text)',
     textDecoration: 'none',
     fontSize: '14px',
     fontWeight: 500,
@@ -291,9 +300,9 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   navLinkActive: {
-    color: '#0369a1',
-    background: '#eff6ff',
-    borderBottom: '2px solid #0369a1',
+    color: 'var(--accent-color)',
+    background: 'var(--bg-color)',
+    borderBottom: '2px solid var(--accent-color)',
   },
   navRight: {
     display: 'flex',
@@ -302,17 +311,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   userName: {
     fontSize: '14px',
-    color: '#475569',
+    color: 'var(--text-color)',
     fontWeight: 500,
   },
   logoutBtn: {
     padding: '4px 10px',
-    background: '#f1f5f9',
-    border: '1px solid #e2e8f0',
+    background: 'var(--bg-color)',
+    border: '1px solid var(--border-color)',
     borderRadius: '7px',
     cursor: 'pointer',
     fontSize: '12px',
-    color: '#475569',
+    color: 'var(--muted-text)',
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },

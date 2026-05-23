@@ -1,6 +1,22 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 
 const AdminFAQ = () => {
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    setTimeout(() => {
+      toast.success('Message sent! Support will contact you soon.');
+      setContactForm({ name: '', email: '', message: '' });
+      setIsSubmitting(false);
+    }, 1000);
+  };
+
   const managementWorkflow = [
     {
       title: "Operational Workflow",
@@ -91,6 +107,48 @@ const AdminFAQ = () => {
               </div>
             </div>
           ))}
+
+          {/* Contact Support Form */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>System Support</h3>
+            <div style={styles.contactCard}>
+              <p style={styles.contactIntro}>Report system bugs or request administrative assistance using the form below.</p>
+              <form onSubmit={handleContactSubmit} style={styles.form}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Administrator Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Issue / Request Description</label>
+                  <textarea
+                    required
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    style={{ ...styles.input, height: '100px', resize: 'none' }}
+                  />
+                </div>
+                <button type="submit" disabled={isSubmitting} style={styles.submitBtn}>
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <div style={styles.footer}>
@@ -150,6 +208,35 @@ const styles: Record<string, React.CSSProperties> = {
   },
   question: { margin: '0 0 10px', color: '#f1f5f9', fontSize: '16px', fontWeight: 600 },
   answer: { margin: 0, color: '#94a3b8', fontSize: '14px', lineHeight: '1.6' },
+  contactCard: {
+    padding: '24px',
+    background: '#0f172a',
+    borderRadius: '12px',
+    border: '1px solid #334155',
+  },
+  contactIntro: { fontSize: '14px', color: '#64748b', marginBottom: '20px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '13px', fontWeight: 600, color: '#94a3b8' },
+  input: {
+    padding: '10px 12px',
+    background: '#1e293b',
+    borderRadius: '8px',
+    border: '1px solid #334155',
+    fontSize: '14px',
+    color: '#f1f5f9',
+    outline: 'none',
+  },
+  submitBtn: {
+    padding: '12px',
+    background: '#38bdf8',
+    color: '#0f172a',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 700,
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
   footer: { marginTop: '64px', textAlign: 'center', padding: '32px 0', borderTop: '1px solid #334155' },
   footerText: { fontSize: '12px', color: '#475569', letterSpacing: '1px', textTransform: 'uppercase' },
 };

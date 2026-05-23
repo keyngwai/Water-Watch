@@ -15,9 +15,11 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ProfilePage from './pages/ProfilePage';
 import CitizenDashboard from './pages/citizen/Dashboard';
 import SubmitReport from './pages/citizen/SubmitReport';
 import MyReports from './pages/citizen/MyReports';
+import PublicMap from './pages/citizen/PublicMap';
 import ReportDetail from './pages/ReportDetail';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminReports from './pages/admin/Reports';
@@ -51,8 +53,8 @@ export default function App() {
       }
     });
 
-    if (user?.id) {
-      const techEvent = `technician_assigned_${user.id}`;
+    if (user?.role === 'technician' && user?.technician_id) {
+      const techEvent = `technician_assigned_${user.technician_id}`;
       socket.on(techEvent, (data) => {
         toast.success(`Task Assigned: ${data.referenceCode} - ${data.title}`, {
           duration: 6000,
@@ -97,6 +99,9 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reports/:id" element={<ReportDetail />} />
+          <Route path="/profile" element={
+            <ProtectedRoute><ProfilePage /></ProtectedRoute>
+          } />
 
           {/* Citizen */}
           <Route path="/dashboard" element={
@@ -107,6 +112,9 @@ export default function App() {
           } />
           <Route path="/my-reports" element={
             <ProtectedRoute role="citizen"><MyReports /></ProtectedRoute>
+          } />
+          <Route path="/map" element={
+            <ProtectedRoute role="citizen"><PublicMap /></ProtectedRoute>
           } />
           <Route path="/help" element={<CitizenFAQ />} />
 

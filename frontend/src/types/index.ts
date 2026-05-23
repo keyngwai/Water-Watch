@@ -35,6 +35,7 @@ export interface User {
   is_root_admin: boolean;
   is_active: boolean;
   is_email_verified: boolean;
+  technician_id?: string; // profile ID for technicians
   last_login_at: string | null;
   created_at: string;
 }

@@ -113,6 +113,7 @@ export const reportValidation = {
     query('status').optional({ checkFalsy: true }).isIn(['reported','verified','in_progress','resolved','rejected']),
     query('category').optional({ checkFalsy: true }).isIn(['broken_borehole','contaminated_water','illegal_connection','water_shortage','unfair_pricing','pipe_burst','no_water_supply','other']),
     query('county').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    query('assigned_to').optional({ checkFalsy: true }).isUUID().withMessage('Invalid technician ID'),
     query('radius_km').optional({ checkFalsy: true }).isFloat({ min: 0.1, max: 100 }).withMessage('Radius must be 0.1–100 km'),
     query('lat').optional({ checkFalsy: true }).isFloat({ min: -4.72, max: 5.02 }),
     query('lng').optional({ checkFalsy: true }).isFloat({ min: 33.9, max: 41.9 }),

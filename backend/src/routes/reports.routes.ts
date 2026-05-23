@@ -97,12 +97,12 @@ router.get('/admin/export.pdf', authenticate, authorize('admin'), reportValidati
 
 /**
  * PATCH /api/reports/:id/status
- * Admin: Updates a report's status, assigns a technician, or adds an official comment.
+ * Admin/Technician: Updates a report's status (verify/assign/resolve).
  */
 router.patch(
   '/:id/status',
   authenticate,
-  authorize('admin'),
+  authorize('admin', 'technician'),
   reportValidation.updateStatus,
   validate,
   reportsController.updateReportStatus

@@ -1,6 +1,22 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import Layout from '../../components/shared/Layout';
 
 const CitizenFAQ = () => {
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    setTimeout(() => {
+      toast.success('Message sent! Support will contact you soon.');
+      setContactForm({ name: '', email: '', message: '' });
+      setIsSubmitting(false);
+    }, 1000);
+  };
+
   const faqData = [
     {
       title: "Quick Start Guide",
@@ -75,6 +91,51 @@ const CitizenFAQ = () => {
               </div>
             </div>
           ))}
+
+          {/* Contact Support Form */}
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>Still Need Help?</h3>
+            <div style={styles.contactCard}>
+              <p style={styles.contactIntro}>Send us a message and our team will get back to you within 24 hours.</p>
+              <form onSubmit={handleContactSubmit} style={styles.form}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Your Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    style={styles.input}
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Message</label>
+                  <textarea
+                    required
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    style={{ ...styles.input, height: '100px', resize: 'none' }}
+                    placeholder="How can we help you today?"
+                  />
+                </div>
+                <button type="submit" disabled={isSubmitting} style={styles.submitBtn}>
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <div style={styles.footer}>
@@ -118,6 +179,37 @@ const styles: Record<string, React.CSSProperties> = {
   },
   question: { margin: '0 0 8px', color: '#1e293b', fontSize: '15px', fontWeight: 600 },
   answer: { margin: 0, color: '#64748b', fontSize: '14px', lineHeight: '1.5' },
+  contactCard: {
+    padding: '20px',
+    background: 'white',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+  },
+  contactIntro: { fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.5' },
+  form: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '13px', fontWeight: 600, color: '#475569' },
+  input: {
+    padding: '10px 12px',
+    borderRadius: '8px',
+    border: '1px solid #cbd5e1',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  },
+  submitBtn: {
+    padding: '12px',
+    background: '#0369a1',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 700,
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+  },
   footer: { marginTop: '48px', textAlign: 'center', padding: '24px 0', borderTop: '1px solid #e2e8f0' },
   footerText: { fontSize: '12px', color: '#94a3b8' },
 };

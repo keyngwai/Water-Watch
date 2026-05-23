@@ -10,7 +10,7 @@ export default function LandingPage() {
         <span style={ls.brand}>Maji Watch</span>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Link to="/login" style={ls.navLink}>Citizen Login</Link>
-          <Link to="/register" style={{ ...ls.navLink, background: '#0369a1', color: 'white', borderRadius: '12px', padding: '10px 20px', boxShadow: '0 4px 12px rgba(3, 105, 161, 0.2)' }}>
+          <Link to="/register" style={{ ...ls.navLink, background: 'var(--accent-color)', color: 'white', borderRadius: '12px', padding: '10px 20px', boxShadow: '0 4px 12px rgba(3, 105, 161, 0.2)' }}>
             Join the Community
           </Link>
         </div>
@@ -19,7 +19,7 @@ export default function LandingPage() {
       <div style={ls.hero}>
         <div style={ls.heroText}>
           <div style={ls.badge}>Serving all 47 Counties</div>
-          <h1 style={ls.heroTitle}>Sauti Yako,<br /><span style={{ color: '#0369a1' }}>Maji Yetu.</span></h1>
+          <h1 style={ls.heroTitle}>Sauti Yako,<br /><span style={{ color: 'var(--accent-color)' }}>Maji Yetu.</span></h1>
           <p style={ls.heroSubtitle}>
             Bridging the gap between Kenyan citizens and county water authorities. 
             Report leaks, shortages, and bursts to ensure every drop counts in your community.

@@ -14,7 +14,7 @@ function AddTechnicianModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   const mutation = useMutation({
     mutationFn: () => techniciansApi.create(form as Record<string, unknown>),
     onSuccess: () => { toast.success('Technician registered.'); onSuccess(); onClose(); },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: async (err) => toast.error(await getApiError(err)),
   });
 
   const field = (key: keyof typeof form, label: string, type = 'text', placeholder = '') => (
@@ -155,7 +155,7 @@ export default function AdminTechnicians() {
       queryClient.invalidateQueries({ queryKey: ['technicians'] });
       queryClient.invalidateQueries({ queryKey: ['admin-reports'], exact: false });
     },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: async (err) => toast.error(await getApiError(err)),
   });
 
   return (

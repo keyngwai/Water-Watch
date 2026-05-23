@@ -11,9 +11,9 @@ export function StatusBadge({ status }: { status: ReportStatus }) {
       borderRadius: '20px',
       fontSize: '12px',
       fontWeight: 600,
-      background: `${color}18`,
+      background: `color-mix(in srgb, ${color}, transparent 85%)`,
       color: color,
-      border: `1px solid ${color}30`,
+      border: `1px solid color-mix(in srgb, ${color}, transparent 70%)`,
       letterSpacing: '0.2px',
       textTransform: 'uppercase',
     }}>
@@ -38,9 +38,9 @@ export function CategoryBadge({ category }: { category: IssueCategory }) {
       borderRadius: '6px',
       fontSize: '12px',
       fontWeight: 500,
-      background: '#f1f5f9',
-      color: '#475569',
-      border: '1px solid #e2e8f0',
+      background: 'var(--bg-color)',
+      color: 'var(--text-color)',
+      border: '1px solid var(--border-color)',
     }}>
       {CATEGORY_LABELS[category]}
     </span>
@@ -57,7 +57,7 @@ export function SeverityBadge({ severity }: { severity: SeverityLevel }) {
       borderRadius: '4px',
       fontSize: '11px',
       fontWeight: 700,
-      background: `${color}15`,
+      background: `color-mix(in srgb, ${color}, transparent 85%)`,
       color: color,
       letterSpacing: '0.5px',
       textTransform: 'uppercase',
@@ -97,13 +97,14 @@ export function ReportCard({
     <div
       onClick={onClick}
       style={{
-        background: '#ffffff',
-        borderRadius: '12px',
-        border: '1px solid #e2e8f0',
+        background: 'var(--card-bg)',
+        borderRadius: '16px',
+        border: '1px solid var(--border-color)',
         overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        color: 'var(--text-color)',
       }}
       onMouseEnter={(e) => {
         if (onClick) {
@@ -129,7 +130,7 @@ export function ReportCard({
             <StatusBadge status={report.status} />
             {!compact && <SeverityBadge severity={report.severity} />}
           </div>
-          <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: '11px', color: 'var(--muted-text)', flexShrink: 0, fontFamily: 'monospace' }}>
             {report.reference_code}
           </span>
         </div>
@@ -137,7 +138,7 @@ export function ReportCard({
         <h3 style={{
           fontSize: compact ? '14px' : '15px',
           fontWeight: 600,
-          color: '#0f172a',
+          color: 'var(--text-color)',
           marginBottom: '6px',
           lineHeight: '1.4',
         }}>
@@ -149,11 +150,11 @@ export function ReportCard({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+          <span style={{ fontSize: '12px', color: 'var(--muted-text)' }}>
             {report.location_name || report.county}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+            <span style={{ fontSize: '12px', color: 'var(--muted-text)' }}>
               {report.upvote_count} upvotes
             </span>
             {showUpvoteButton && onUpvote && (
@@ -165,21 +166,21 @@ export function ReportCard({
                 style={{
                   padding: '4px 10px',
                   borderRadius: '6px',
-                  border: '1px solid #0369a1',
+                  border: '1px solid var(--accent-color)',
                   background: 'transparent',
-                  color: '#0369a1',
+                  color: 'var(--accent-color)',
                   cursor: 'pointer',
                   fontSize: '12px',
                   fontWeight: 600,
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = '#0369a1';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-color)';
                   (e.currentTarget as HTMLButtonElement).style.color = 'white';
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#0369a1';
+                  (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-color)';
                 }}
               >
                 Upvote

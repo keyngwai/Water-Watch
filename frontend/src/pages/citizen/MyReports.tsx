@@ -23,7 +23,7 @@ export default function MyReports() {
       toast.success('Report upvoted!');
       queryClient.invalidateQueries({ queryKey: ['area-reports'] });
     },
-    onError: (err) => toast.error(getApiError(err)),
+    onError: async (err) => toast.error(await getApiError(err)),
   });
 
   const handleUpvote = (reportId: string) => {

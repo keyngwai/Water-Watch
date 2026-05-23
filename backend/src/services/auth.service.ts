@@ -169,12 +169,20 @@ export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
   // Update last login timestamp
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
+  // If user is a technician, fetch their technician profile ID
+  let technician_id: string | undefined;
+  if (user.role === 'technician') {
+    const tech = await queryOne<{ id: string }>('SELECT id FROM technicians WHERE user_id = $1', [user.id]);
+    technician_id = tech?.id;
+  }
+
   logger.debug('Creating JWT token for user login', {
     id: user.id,
     email: user.email,
     role: user.role,
     county: user.county,
     is_root_admin: user.is_root_admin,
+    technician_id,
   });
 
   const accessToken = signAccessToken({
@@ -183,13 +191,14 @@ export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
     email: user.email,
     county: user.county,
     is_root_admin: user.is_root_admin ?? false,
+    technician_id,
   });
   const { rawToken } = await insertRefreshSession(user.id);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password_hash, ...safeUser } = user;
   return {
-    user: safeUser as Omit<UserRow, 'password_hash'>,
+    user: { ...safeUser, technician_id } as any,
     accessToken,
     refreshTokenRaw: rawToken,
   };
@@ -252,6 +261,9 @@ export async function rotateRefreshToken(
       email: u.email,
       county: u.county,
       is_root_admin: u.is_root_admin ?? false,
+      technician_id: u.role === 'technician' 
+        ? (await client.query<{ id: string }>('SELECT id FROM technicians WHERE user_id = $1', [u.id])).rows[0]?.id
+        : undefined,
     });
     return { accessToken, newRefreshToken: newRaw };
   });
@@ -274,12 +286,19 @@ export async function revokeRefreshToken(rawToken: string): Promise<void> {
  * Fetches user profile by ID, excluding sensitive fields like password hash.
  */
 export async function getUserById(id: string): Promise<Omit<UserRow, 'password_hash'> | null> {
-  return queryOne<Omit<UserRow, 'password_hash'>>(
+  const user = await queryOne<Omit<UserRow, 'password_hash'>>(
     `SELECT id, email, phone, full_name, role, county, sub_county, ward,
             is_root_admin, is_active, is_email_verified, last_login_at, created_at, updated_at
      FROM users WHERE id = $1`,
     [id]
   );
+
+  if (user && user.role === 'technician') {
+    const tech = await queryOne<{ id: string }>('SELECT id FROM technicians WHERE user_id = $1', [user.id]);
+    (user as any).technician_id = tech?.id;
+  }
+
+  return user;
 }
 
 /**

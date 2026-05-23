@@ -51,6 +51,7 @@ export async function listReports(req: Request, res: Response, next: NextFunctio
       status: req.query.status as never,
       category: req.query.category as never,
       county: req.query.county as string,
+      assigned_to: req.query.assigned_to as string,
       lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
       lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
       radius_km: req.query.radius_km ? parseFloat(req.query.radius_km as string) : undefined,
@@ -257,6 +258,8 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
       end_date: req.query.end_date as string | undefined,
     };
 
+    logger.debug('Starting PDF export', { user: req.user?.sub, filterOpts });
+
     const [rows, stats] = await Promise.all([
       reportsService.exportReportsForAdmin({
         page: 1,
@@ -272,12 +275,15 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
       reportsService.getFilteredReportStats(filterOpts),
     ]);
 
+    logger.debug('PDF export data fetched', { rowCount: rows.length });
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="reports-export-${Date.now()}.pdf"`);
 
     const pdfBytes = await buildReportPdfBytes(rows, stats);
     res.status(200).send(Buffer.from(pdfBytes));
   } catch (err) {
+    logger.error('PDF export failed', { error: err });
     next(err);
   }
 }

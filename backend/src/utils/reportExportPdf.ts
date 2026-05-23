@@ -35,9 +35,16 @@ function trendLines(raw: unknown): { label: string; value: number }[] {
   return raw.map((row) => {
     const r = row as Record<string, unknown>;
     const d = r.date as Date | string | undefined;
-    const label =
-      d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10);
-    return { label: label || '—', value: toNum(r.count) };
+    
+    let label = '—';
+    if (d instanceof Date) {
+      label = d.toISOString().slice(0, 10);
+    } else if (typeof d === 'string') {
+      // If it's a string, try to parse it or just slice it
+      label = d.slice(0, 10);
+    }
+    
+    return { label, value: toNum(r.count) };
   });
 }
 
@@ -165,38 +172,45 @@ class PdfLayout {
     const maxV = Math.max(1, ...slice.map((p) => p.value));
     const baseY = A4_H - (yStart + chartH - pad);
 
-    this.page.drawRectangle({
-      x: MARGIN,
-      y: A4_H - yStart - chartH,
-      width: chartW,
-      height: chartH,
-      borderColor: rgb(0.89, 0.91, 0.94),
-      borderWidth: 0.5,
-    });
-
-    if (slice.length === 1) {
-      const py = baseY - (slice[0].value / maxV) * (innerH - 6);
-      const px = MARGIN + pad + innerW / 2;
+    try {
       this.page.drawRectangle({
-        x: px - 2,
-        y: py - 2,
-        width: 4,
-        height: 4,
-        color: rgb(0.01, 0.41, 0.63),
+        x: MARGIN,
+        y: A4_H - yStart - chartH,
+        width: chartW,
+        height: chartH,
+        borderColor: rgb(0.89, 0.91, 0.94),
+        borderWidth: 0.5,
       });
-    } else {
-      for (let i = 1; i < slice.length; i += 1) {
-        const x1 = MARGIN + pad + ((i - 1) / (slice.length - 1)) * innerW;
-        const x2 = MARGIN + pad + (i / (slice.length - 1)) * innerW;
-        const y1 = baseY - (slice[i - 1].value / maxV) * (innerH - 6);
-        const y2 = baseY - (slice[i].value / maxV) * (innerH - 6);
-        this.page.drawLine({
-          start: { x: x1, y: y1 },
-          end: { x: x2, y: y2 },
-          thickness: 1,
+
+      if (slice.length === 1) {
+        const py = baseY - (slice[0].value / maxV) * (innerH - 6);
+        const px = MARGIN + pad + innerW / 2;
+        this.page.drawRectangle({
+          x: px - 2,
+          y: py - 2,
+          width: 4,
+          height: 4,
           color: rgb(0.01, 0.41, 0.63),
         });
+      } else {
+        for (let i = 1; i < slice.length; i += 1) {
+          const x1 = MARGIN + pad + ((i - 1) / (slice.length - 1)) * innerW;
+          const x2 = MARGIN + pad + (i / (slice.length - 1)) * innerW;
+          const y1 = baseY - (slice[i - 1].value / maxV) * (innerH - 6);
+          const y2 = baseY - (slice[i].value / maxV) * (innerH - 6);
+          
+          if (Number.isFinite(x1) && Number.isFinite(x2) && Number.isFinite(y1) && Number.isFinite(y2)) {
+            this.page.drawLine({
+              start: { x: x1, y: y1 },
+              end: { x: x2, y: y2 },
+              thickness: 1,
+              color: rgb(0.01, 0.41, 0.63),
+            });
+          }
+        }
       }
+    } catch (e) {
+      this.muted('Could not render trend chart.');
     }
 
     this.yFromTop = yStart + chartH + 6;

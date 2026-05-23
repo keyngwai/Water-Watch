@@ -127,6 +127,7 @@ export interface JwtPayload {
   email: string;
   county: string | null;
   is_root_admin: boolean;
+  technician_id?: string; // profile ID for technicians
   iat?: number;
   exp?: number;
 }

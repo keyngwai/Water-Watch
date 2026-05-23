@@ -62,17 +62,21 @@ export default function SubmitReport() {
       const addr = data.address || {};
 
       // Nominatim uses different keys depending on location; we try a few
-      let county = addr.county || addr.state || addr.region || '';
+      let rawCounty = addr.county || addr.state || addr.region || '';
       const subCounty = addr.city_district || addr.suburb || addr.town || addr.village || '';
       const ward = addr.neighbourhood || addr.hamlet || addr.locality || '';
       const locationName = data.display_name;
 
-      // Normalize county name and match against Kenyan counties
-      county = county.toLowerCase().replace(/\s+county$/, '').trim();
-      const matchedCounty = KENYAN_COUNTIES.find(c =>
-        c.toLowerCase().replace(/\s+county$/, '').trim() === county ||
-        county.includes(c.toLowerCase().replace(/\s+county$/, '').trim())
-      ) || county; // fallback to original if no match
+      // Normalize search term
+      const normalize = (s: string) => s.toLowerCase().replace(/\s+county$/, '').trim();
+      const normalizedRaw = normalize(rawCounty);
+      const normalizedDisplay = normalize(locationName);
+
+      // Try to find a match in the specific county field first, then the full location name
+      const matchedCounty = KENYAN_COUNTIES.find(c => {
+        const nc = normalize(c);
+        return nc === normalizedRaw || normalizedRaw.includes(nc) || normalizedDisplay.includes(nc);
+      }) || rawCounty; // fallback to original if no match
 
       return { county: matchedCounty, sub_county: subCounty, ward, location_name: locationName };
     } catch {
@@ -172,7 +176,7 @@ export default function SubmitReport() {
       toast.success(`Report ${report.reference_code} submitted!`);
       navigate(`/reports/${report.id}`);
     } catch (err) {
-      toast.error(getApiError(err));
+      toast.error(await getApiError(err));
     } finally {
       setSubmitting(false);
     }

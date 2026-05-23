@@ -16,7 +16,7 @@ export default function ForgotPassword() {
       setSubmitted(true);
       toast.success('If the email exists, a reset link has been sent.');
     } catch (error) {
-      toast.error(getApiError(error));
+      toast.error(await getApiError(error));
     } finally {
       setIsSubmitting(false);
     }

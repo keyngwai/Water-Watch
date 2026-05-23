@@ -7,6 +7,7 @@ export interface ReportFilters {
   status?: string;
   category?: string;
   county?: string;
+  assigned_to?: string;
   start_date?: string;
   end_date?: string;
   lat?: number;
@@ -68,11 +69,11 @@ async function refreshAccessToken(): Promise<string | null> {
 
 /**
  * Pre-configured Axios instance for all API calls.
- * Includes base URL, timeout, and credentials support.
+ * Includes base URL, timeout (increased to 60s for heavy operations), and credentials support.
  */
 const api = axios.create({
   baseURL: apiBaseUrl(),
-  timeout: 30_000,
+  timeout: 60_000,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -271,19 +272,29 @@ export const reportsApi = {
     return res.data.data;
   },
 
+  /** Exports filtered reports to a CSV file. */
   exportCsv: async (filters: ReportStatsFilters = {}): Promise<void> => {
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
     );
-    const res = await api.get('/reports/admin/export.csv', { params, responseType: 'blob' });
+    const res = await api.get('/reports/admin/export.csv', {
+      params,
+      responseType: 'blob',
+      timeout: 60_000, // 1 minute timeout for CSV export
+    });
     downloadBlob(res.data, `reports-export-${Date.now()}.csv`);
   },
 
+  /** Exports filtered reports to a professional PDF. */
   exportPdf: async (filters: ReportStatsFilters = {}): Promise<void> => {
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, v]) => v !== undefined && v !== '')
     );
-    const res = await api.get('/reports/admin/export.pdf', { params, responseType: 'blob' });
+    const res = await api.get('/reports/admin/export.pdf', {
+      params,
+      responseType: 'blob',
+      timeout: 120_000, // 2 minute timeout for heavy PDF generation
+    });
     downloadBlob(res.data, `reports-export-${Date.now()}.pdf`);
   },
 };
@@ -315,18 +326,43 @@ export const techniciansApi = {
 
 /**
  * Utility to extract user-friendly error messages from Axios errors.
+ * Now includes actionable suggestions if provided by the backend.
+ * Handles both standard JSON and Blob error responses.
  */
-export function getApiError(err: unknown): string {
+export async function getApiError(err: unknown): Promise<string> {
   if (axios.isAxiosError(err)) {
-    const data = err.response?.data;
+    // Handle Timeout Error
+    if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+      return 'The request took too long to complete.\n\n💡 Suggestion: Please try narrowing your filters (e.g., select a specific date range or county) to reduce the data volume, then try again.';
+    }
+
+    let data = err.response?.data;
+
+    // Handle Blob error response (often from file exports)
+    if (data instanceof Blob && data.type === 'application/json') {
+      try {
+        const text = await data.text();
+        data = JSON.parse(text);
+      } catch {
+        // Fallback if parsing fails
+      }
+    }
+
+    let message = data?.error || err.message || 'An unexpected error occurred.';
+    
     if (data?.details) {
       // For validation errors, show field-specific messages
       const details = Object.entries(data.details as Record<string, string[]>)
         .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
         .join('; ');
-      return `${data.error} ${details}`;
+      message = `${message} ${details}`;
     }
-    return data?.error || err.message || 'An unexpected error occurred.';
+
+    if (data?.suggestion) {
+      message = `${message}\n\n💡 Suggestion: ${data.suggestion}`;
+    }
+
+    return message;
   }
   return (err as Error).message || 'An unexpected error occurred.';
 }

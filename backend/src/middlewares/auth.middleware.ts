@@ -25,6 +25,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
 
     // `req.user` is attached for downstream controller logic (role checks, citizen id, etc.).
     const decoded = jwt.verify(token, secret) as JwtPayload;
+    console.log(`[AUTH] Decoded token for user ${decoded.sub}: role=${decoded.role}`);
     req.user = decoded;
     next();
   } catch (err) {
@@ -51,6 +52,7 @@ export function authorize(...allowedRoles: UserRole[]) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
+      console.log(`[AUTH] 403 Forbidden: User role '${req.user.role}' not in allowed roles: ${allowedRoles.join(', ')}`);
       sendError(
         res,
         403,

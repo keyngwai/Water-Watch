@@ -177,9 +177,15 @@ process.on('SIGINT', async () => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Don't exit the process, just log it
+process.on('unhandledRejection', (reason: any, promise) => {
+  // If it's a DB connection reset, we log it as a warning since the pool handles it
+  if (reason?.code === 'ECONNRESET' || reason?.message?.includes('ECONNRESET')) {
+    logger.warn('Unhandled Rejection (ECONNRESET): Connection was closed by the database server.', { 
+      reason: reason.message 
+    });
+  } else {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  }
 });
 
 // Handle uncaught exceptions

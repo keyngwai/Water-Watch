@@ -23,7 +23,7 @@ export function LoginPage() {
       else if (user?.role === 'technician') navigate('/technician');
       else navigate('/dashboard');
     } catch (err) {
-      toast.error(getApiError(err));
+      toast.error(await getApiError(err));
     }
   };
 
@@ -86,7 +86,7 @@ export function RegisterPage() {
       toast.success('Account created!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(getApiError(err));
+      toast.error(await getApiError(err));
     }
   };
 

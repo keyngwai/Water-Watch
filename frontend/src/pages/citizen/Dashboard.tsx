@@ -84,9 +84,9 @@ export default function CitizenDashboard() {
         {isLoading ? (
           <p style={{ color: '#94a3b8' }}>Loading your reports...</p>
         ) : reports.length === 0 ? (
-          <div style={styles.empty}>
-            <h3 style={{ color: '#475569', margin: '0 0 8px' }}>No reports yet</h3>
-            <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
+          <div style={styles.emptyState}>
+            <h3 style={styles.emptyTitle}>No reports yet</h3>
+            <p style={styles.emptyText}>
               Help your community by reporting water issues in your area.
             </p>
             <button onClick={() => navigate('/report/new')} style={styles.reportBtn}>
@@ -107,13 +107,13 @@ export default function CitizenDashboard() {
       </div>
 
       {/* Info Banner */}
-      <div style={styles.infoBanner}>
-        <div style={{ fontSize: '20px', color: '#0f172a', marginRight: '10px' }}>Info</div>
+      <div style={styles.infoBox}>
+        <div style={styles.infoIcon}>Info</div>
         <div>
-          <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>
+          <strong style={styles.infoTitle}>
             How Maji Watch Works
           </strong>
-          <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>
+          <p style={styles.infoText}>
             After submitting a report, county water authority staff will review and verify it.
             Once verified, a technician is assigned to fix the issue. You'll be able to track
             progress through each stage until resolution.
@@ -132,8 +132,8 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '20px',   // slightly tighter
     gap: '12px',
   },
-  welcomeTitle: { fontSize: '30px', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' },
-  welcomeText: { fontSize: '14px', color: '#64748b', marginTop: '4px' },
+  welcomeTitle: { fontSize: '30px', fontWeight: 800, color: 'var(--text-color)', margin: 0, letterSpacing: '-0.5px' },
+  welcomeText: { fontSize: '14px', color: 'var(--muted-text)', marginTop: '4px' },
   reportBtn: {
     padding: '6px 10px',        // 🔥 smaller padding
     background: '#0369a1',
@@ -163,22 +163,22 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(0,0,0,0.05)',
   },
   statNum: { fontSize: '32px', fontWeight: 800, lineHeight: 1 },
-  statLabel: { fontSize: '13px', color: '#64748b', marginTop: '4px' },
+  statLabel: { fontSize: '13px', color: 'var(--muted-text)', marginTop: '4px' },
   section: { marginBottom: '24px' },
   sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  sectionTitle: { fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: 0 },
+  sectionTitle: { fontSize: '20px', fontWeight: 700, color: 'var(--text-color)', margin: 0 },
   sectionActions: {
     display: 'flex',
     alignItems: 'center',
   },
   viewAll: {
-    padding: '6px 14px',
-    background: '#f1f5f9',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
+    padding: '10px 24px',
+    background: 'color-mix(in srgb, var(--accent-color), transparent 90%)',
+    border: '1px solid color-mix(in srgb, var(--accent-color), transparent 80%)',
+    borderRadius: '12px',
     cursor: 'pointer',
-    fontSize: '13px',
-    color: '#0369a1',
+    fontSize: '14px',
+    color: 'var(--accent-color)',
     fontWeight: 600,
   },
   reportGrid: {
@@ -186,22 +186,37 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
     gap: '16px',
   },
-  empty: {
-    textAlign: 'center',
-    padding: '60px 40px',
-    background: 'white',
-    borderRadius: '16px',
-    border: '2px dashed #e2e8f0',
-  },
-  infoBanner: {
+  infoBox: {
     display: 'flex',
     gap: '16px',
-    background: '#eff6ff',
-    borderRadius: '12px',
     padding: '20px',
-    border: '1px solid #bfdbfe',
-    alignItems: 'flex-start',
+    background: 'var(--bg-color)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '16px',
+    alignItems: 'center',
   },
+  infoIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '12px',
+    background: 'color-mix(in srgb, var(--accent-color), transparent 90%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '24px',
+    color: 'var(--accent-color)',
+  },
+  infoTitle: { color: 'var(--text-color)', display: 'block', marginBottom: '4px', fontWeight: 700 },
+  infoText: { color: 'var(--muted-text)', fontSize: '13px', margin: 0 },
+  emptyState: {
+    padding: '60px 20px',
+    textAlign: 'center',
+    background: 'var(--card-bg)',
+    borderRadius: '24px',
+    border: '2px dashed var(--border-color)',
+  },
+  emptyTitle: { color: 'var(--text-color)', margin: '0 0 8px', fontWeight: 700 },
+  emptyText: { color: 'var(--muted-text)', fontSize: '14px', marginBottom: '20px' },
 };
 
 // Responsive adjustments for mobile
@@ -209,7 +224,7 @@ if (window.innerWidth <= 700) {
   styles.welcome.flexDirection = 'column';
   styles.statsRow.gridTemplateColumns = '1fr 1fr';
   styles.reportGrid.gridTemplateColumns = '1fr';
-  styles.empty.padding = '32px 10px';
-  styles.infoBanner.flexDirection = 'column';
-  styles.infoBanner.padding = '14px';
+  styles.emptyState.padding = '32px 10px';
+  styles.infoBox.flexDirection = 'column';
+  styles.infoBox.padding = '14px';
 }

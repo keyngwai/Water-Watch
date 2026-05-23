@@ -26,7 +26,7 @@ export default function ResetPassword() {
       toast.success('Password reset successful. Please sign in.');
       navigate('/login');
     } catch (error) {
-      toast.error(getApiError(error));
+      toast.error(await getApiError(error));
     } finally {
       setIsSubmitting(false);
     }
