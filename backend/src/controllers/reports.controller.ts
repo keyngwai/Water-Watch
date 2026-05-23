@@ -4,6 +4,7 @@ import { saveReportImages, deleteReportImage } from '../services/upload.service'
 import { emitNotification } from '../utils/socket';
 import { sendSuccess, sendCreated, parsePagination } from '../utils/response';
 import { buildReportPdfBytes } from '../utils/reportExportPdf';
+import { logger } from '../utils/logger';
 
 /**
  * Controller (Citizen): Submit a new water issue report.
@@ -244,6 +245,18 @@ export async function exportReportsCsv(req: Request, res: Response, next: NextFu
 
 /**
  * Controller (Admin): Export filtered reports and statistics to a professional PDF.
+ * 
+ * Workflow:
+ * 1. Context Resolution: Determines if the requester is a root admin (global access) 
+ *    or a county admin (restricted to their specific county).
+ * 2. Sequential Data Fetching: Fetches the flat report list and aggregated dashboard 
+ *    statistics. These are run sequentially to prevent database connection pool 
+ *    exhaustion during heavy loads.
+ * 3. PDF Generation: Passes the fetched data to the `buildReportPdfBytes` utility.
+ *    This uses `pdf-lib` to programmatically draw charts, tables, and branding 
+ *    into a standard A4 document.
+ * 4. Streamed Delivery: Sends the resulting binary buffer with appropriate headers 
+ *    (`application/pdf`) to trigger a browser-side download.
  */
 export async function exportReportsPdf(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -256,12 +269,14 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
       category: req.query.category as never,
       start_date: req.query.start_date as string | undefined,
       end_date: req.query.end_date as string | undefined,
+      user: userCtx,
     };
 
     logger.debug('Starting PDF export', { user: req.user?.sub, filterOpts });
 
-    const [rows, stats] = await Promise.all([
-      reportsService.exportReportsForAdmin({
+    try {
+      // Run these sequentially to avoid pool exhaustion (ECONNRESET)
+      const reports = await reportsService.exportReportsForAdmin({
         page: 1,
         limit: 5000,
         offset: 0,
@@ -271,17 +286,23 @@ export async function exportReportsPdf(req: Request, res: Response, next: NextFu
         start_date: req.query.start_date as string,
         end_date: req.query.end_date as string,
         user: userCtx,
-      }),
-      reportsService.getFilteredReportStats(filterOpts),
-    ]);
+      });
 
-    logger.debug('PDF export data fetched', { rowCount: rows.length });
+      const stats = await reportsService.getFilteredReportStats(filterOpts);
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="reports-export-${Date.now()}.pdf"`);
+      logger.debug('PDF export data fetched', { rowCount: reports.length });
 
-    const pdfBytes = await buildReportPdfBytes(rows, stats);
-    res.status(200).send(Buffer.from(pdfBytes));
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="reports-export-${Date.now()}.pdf"`);
+
+      const pdfBytes = await buildReportPdfBytes(reports as any[], stats);
+      logger.debug('PDF bytes generated', { byteLength: pdfBytes.length });
+      
+      res.status(200).send(Buffer.from(pdfBytes));
+    } catch (dataErr) {
+      logger.error('Error fetching data for PDF export', { error: dataErr });
+      throw dataErr;
+    }
   } catch (err) {
     logger.error('PDF export failed', { error: err });
     next(err);

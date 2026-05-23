@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import { logger } from './logger';
 
 const A4_W = 595.28;
 const A4_H = 841.89;
@@ -242,109 +243,124 @@ export async function buildReportPdfBytes(
   rows: Record<string, unknown>[],
   stats: Record<string, unknown>
 ): Promise<Uint8Array> {
-  const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const layout = new PdfLayout(doc, font, fontBold);
+  logger.debug('Entering buildReportPdfBytes', { rowCount: rows.length });
+  try {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const layout = new PdfLayout(doc, font, fontBold);
 
-  layout.page.drawText('Maji Watch', {
-    x: MARGIN,
-    y: A4_H - MARGIN - 22,
-    size: 20,
-    font: fontBold,
-    color: rgb(0.047, 0.29, 0.45),
-  });
-  layout.page.drawText('Reports export & analytics snapshot', {
-    x: MARGIN,
-    y: A4_H - MARGIN - 44,
-    size: 12,
-    font: font,
-    color: rgb(0.2, 0.25, 0.33),
-  });
-  layout.yFromTop = MARGIN + 56;
-  layout.muted(`Generated (UTC): ${new Date().toISOString()}`);
-  layout.muted(`Total records matching filters: ${rows.length}`);
-  layout.yFromTop += 6;
+    logger.debug('PDF layout initialized');
 
-  const byStatus = statLines(stats.byStatus, 'status');
-  const byCategory = statLines(stats.byCategory, 'category');
-  const daily = trendLines(stats.dailyTrend);
-
-  layout.heading('Analytics (same filters as export)', 12);
-  layout.rule();
-
-  const maxS = Math.max(1, ...byStatus.map((x) => x.value));
-  byStatus.slice(0, 12).forEach((item) => {
-    layout.barRow(item.label, item.value, maxS, [0.01, 0.52, 0.78]);
-  });
-
-  const maxC = Math.max(1, ...byCategory.map((x) => x.value));
-  layout.yFromTop += 4;
-  byCategory.slice(0, 12).forEach((item) => {
-    layout.barRow(item.label, item.value, maxC, [0.02, 0.59, 0.41]);
-  });
-
-  layout.yFromTop += 6;
-  layout.trend('Daily volume (last ~90 days, filtered)', daily);
-
-  layout.yFromTop += 8;
-  layout.heading('Report detail (excerpt)', 12);
-  layout.rule();
-
-  const colW = [72, 56, 200, A4_W - 2 * MARGIN - 72 - 56 - 200];
-  layout.ensureSpace(1);
-  layout.page.drawRectangle({
-    x: MARGIN,
-    y: A4_H - layout.yFromTop - 14,
-    width: A4_W - 2 * MARGIN,
-    height: 14,
-    color: rgb(0.047, 0.29, 0.45),
-  });
-  const headerY = A4_H - layout.yFromTop - 11;
-  let hx = MARGIN;
-  ['Ref', 'Status', 'Title', 'County'].forEach((h, i) => {
-    layout.page.drawText(pdfSafe(h, 20), {
-      x: hx + 3,
-      y: headerY,
-      size: 8,
+    layout.page.drawText('Maji Watch', {
+      x: MARGIN,
+      y: A4_H - MARGIN - 22,
+      size: 20,
       font: fontBold,
-      color: rgb(1, 1, 1),
-      maxWidth: colW[i] - 6,
+      color: rgb(0.047, 0.29, 0.45),
     });
-    hx += colW[i];
-  });
-  layout.yFromTop += 18;
+    layout.page.drawText('Reports export & analytics snapshot', {
+      x: MARGIN,
+      y: A4_H - MARGIN - 44,
+      size: 12,
+      font: font,
+      color: rgb(0.2, 0.25, 0.33),
+    });
+    layout.yFromTop = MARGIN + 56;
+    layout.muted(`Generated (UTC): ${new Date().toISOString()}`);
+    layout.muted(`Total records matching filters: ${rows.length}`);
+    layout.yFromTop += 6;
 
-  const maxRows = 120;
-  rows.slice(0, maxRows).forEach((row, index) => {
-    if (layout.yFromTop > A4_H - MARGIN - 24) {
-      layout.newPage();
-    }
-    const bg = index % 2 === 0 ? rgb(0.97, 0.98, 0.99) : rgb(1, 1, 1);
+    const byStatus = statLines(stats.byStatus, 'status');
+    const byCategory = statLines(stats.byCategory, 'category');
+    const daily = trendLines(stats.dailyTrend);
+
+    logger.debug('Processing analytics sections', { byStatusCount: byStatus.length });
+
+    layout.heading('Analytics (same filters as export)', 12);
+    layout.rule();
+
+    const maxS = Math.max(1, ...byStatus.map((x) => x.value));
+    byStatus.slice(0, 12).forEach((item) => {
+      layout.barRow(item.label, item.value, maxS, [0.01, 0.52, 0.78]);
+    });
+
+    const maxC = Math.max(1, ...byCategory.map((x) => x.value));
+    layout.yFromTop += 4;
+    byCategory.slice(0, 12).forEach((item) => {
+      layout.barRow(item.label, item.value, maxC, [0.02, 0.59, 0.41]);
+    });
+
+    layout.yFromTop += 6;
+    layout.trend('Daily volume (last ~90 days, filtered)', daily);
+
+    logger.debug('Processing report detail excerpt');
+
+    layout.yFromTop += 8;
+    layout.heading('Report detail (excerpt)', 12);
+    layout.rule();
+
+    const colW = [72, 56, 200, A4_W - 2 * MARGIN - 72 - 56 - 200];
+    layout.ensureSpace(1);
     layout.page.drawRectangle({
       x: MARGIN,
-      y: A4_H - layout.yFromTop - 16,
+      y: A4_H - layout.yFromTop - 14,
       width: A4_W - 2 * MARGIN,
-      height: 16,
-      color: bg,
+      height: 14,
+      color: rgb(0.047, 0.29, 0.45),
     });
-    layout.tableRow(
-      [
-        String(row.reference_code ?? ''),
-        String(row.status ?? ''),
-        String(row.title ?? ''),
-        String(row.county ?? ''),
-      ],
-      colW
+    const headerY = A4_H - layout.yFromTop - 11;
+    let hx = MARGIN;
+    ['Ref', 'Status', 'Title', 'County'].forEach((h, i) => {
+      layout.page.drawText(pdfSafe(h, 20), {
+        x: hx + 3,
+        y: headerY,
+        size: 8,
+        font: fontBold,
+        color: rgb(1, 1, 1),
+        maxWidth: colW[i] - 6,
+      });
+      hx += colW[i];
+    });
+    layout.yFromTop += 18;
+
+    const maxRows = 120;
+    rows.slice(0, maxRows).forEach((row, index) => {
+      if (layout.yFromTop > A4_H - MARGIN - 24) {
+        layout.newPage();
+      }
+      const bg = index % 2 === 0 ? rgb(0.97, 0.98, 0.99) : rgb(1, 1, 1);
+      layout.page.drawRectangle({
+        x: MARGIN,
+        y: A4_H - layout.yFromTop - 16,
+        width: A4_W - 2 * MARGIN,
+        height: 16,
+        color: bg,
+      });
+      layout.tableRow(
+        [
+          String(row.reference_code ?? ''),
+          String(row.status ?? ''),
+          String(row.title ?? ''),
+          String(row.county ?? ''),
+        ],
+        colW
+      );
+    });
+
+    layout.yFromTop += 4;
+    layout.muted(
+      rows.length > maxRows
+        ? `Showing first ${maxRows} rows. Use CSV export for the full dataset.`
+        : `Showing all ${rows.length} rows in this export window.`
     );
-  });
 
-  layout.yFromTop += 4;
-  layout.muted(
-    rows.length > maxRows
-      ? `Showing first ${maxRows} rows. Use CSV export for the full dataset.`
-      : `Showing all ${rows.length} rows in this export window.`
-  );
-
-  return doc.save();
+    logger.debug('Saving PDF document');
+    const result = await doc.save();
+    logger.debug('PDF document saved successfully');
+    return result;
+  } catch (err) {
+    logger.error('Error in buildReportPdfBytes', { error: err });
+    throw err;
+  }
 }

@@ -45,8 +45,10 @@ export interface ListReportsOptions {
 export interface ReportStatsOptions {
   county?: string;
   status?: ReportStatus;
+  category?: IssueCategory;
   start_date?: string;
   end_date?: string;
+  user?: { county: string | null; is_root_admin: boolean };
 }
 
 export interface UpdateStatusInput {
@@ -156,8 +158,8 @@ export async function listReports(
     params.push(opts.category);
   }
   if (opts.county) {
-    conditions.push(`r.county ILIKE $${paramIdx++}`);
-    params.push(`%${opts.county}%`);
+    conditions.push(`r.county = $${paramIdx++}`);
+    params.push(opts.county);
   }
   if (opts.citizen_id) {
     // Override is_public filter when citizen views their own reports
@@ -233,7 +235,14 @@ export async function adminListReports(
 
   if (opts.status) { conditions.push(`r.status = $${paramIdx++}`); params.push(opts.status); }
   if (opts.category) { conditions.push(`r.category = $${paramIdx++}`); params.push(opts.category); }
-  if (opts.county) { conditions.push(`r.county ILIKE $${paramIdx++}`); params.push(`%${opts.county}%`); }
+  
+  if (opts.county) {
+    // Fuzzy search across all location-related fields
+    conditions.push(`(r.county ILIKE $${paramIdx} OR r.sub_county ILIKE $${paramIdx} OR r.ward ILIKE $${paramIdx} OR r.location_name ILIKE $${paramIdx})`);
+    params.push(`%${opts.county}%`);
+    paramIdx++;
+  }
+
   if (opts.start_date) {
     // Compare at DATE granularity to avoid timezone edge-cases.
     conditions.push(`r.created_at >= $${paramIdx++}::date`);
@@ -251,8 +260,9 @@ export async function adminListReports(
       user_county: opts.user.county,
       is_root_admin: opts.user.is_root_admin,
     });
-    conditions.push(`r.county = $${paramIdx++}`);
-    params.push(opts.user.county);
+    // Use ILIKE to handle cases where the stored county name might be slightly different or contain extra info
+    conditions.push(`r.county ILIKE $${paramIdx++}`);
+    params.push(`%${opts.user.county}%`);
   } else if (opts.user) {
     logger.debug('User admin filter check', {
       user_exists: !!opts.user,
@@ -270,7 +280,7 @@ export async function adminListReports(
              u.full_name as citizen_name, u.phone as citizen_phone,
              tu.full_name as technician_name, t.employee_id as technician_employee_id, t.job_role as technician_job_role
       FROM reports r
-      JOIN users u ON u.id = r.citizen_id
+      LEFT JOIN users u ON u.id = r.citizen_id
       LEFT JOIN technicians t ON t.id = r.assigned_to
       LEFT JOIN users tu ON tu.id = t.user_id
       ${whereClause}
@@ -449,8 +459,9 @@ export async function getFilteredReportStats(options: ReportStatsOptions): Promi
   let idx = 1;
 
   if (options.county) {
-    filters.push(`county ILIKE $${idx++}`);
+    filters.push(`(county ILIKE $${idx} OR sub_county ILIKE $${idx} OR ward ILIKE $${idx} OR location_name ILIKE $${idx})`);
     params.push(`%${options.county}%`);
+    idx++;
   }
   if (options.status) {
     filters.push(`status = $${idx++}`);
@@ -464,28 +475,37 @@ export async function getFilteredReportStats(options: ReportStatsOptions): Promi
     filters.push(`created_at < ($${idx++}::date + INTERVAL '1 day')`);
     params.push(options.end_date);
   }
+
+  // County admin restriction: only see stats from their county
+  if (options.user && !options.user.is_root_admin && options.user.county) {
+    filters.push(`county ILIKE $${idx++}`);
+    params.push(`%${options.user.county}%`);
+  }
+
   const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
-  const [statusCounts, categoryCounts, recentTrend, countyCounts] = await Promise.all([
-    query<Record<string, unknown>>(
-      `SELECT status, COUNT(*) as count FROM reports ${whereClause} GROUP BY status`,
-      params
-    ),
-    query<Record<string, unknown>>(
-      `SELECT category, COUNT(*) as count FROM reports ${whereClause} GROUP BY category ORDER BY count DESC`,
-      params
-    ),
-    query<Record<string, unknown>>(`
-      SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
-      FROM reports
-      ${whereClause ? `${whereClause} AND created_at >= NOW() - INTERVAL '90 days'` : `WHERE created_at >= NOW() - INTERVAL '90 days'`}
-      GROUP BY date ORDER BY date ASC
-    `, params),
-    query<Record<string, unknown>>(
-      `SELECT county, COUNT(*) as count FROM reports ${whereClause} GROUP BY county ORDER BY count DESC`,
-      params
-    ),
-  ]);
+  // Run queries sequentially to avoid overwhelming the pool during heavy exports (PDF/CSV)
+  const statusCounts = await query<Record<string, unknown>>(
+    `SELECT status, COUNT(*) as count FROM reports ${whereClause} GROUP BY status`,
+    params
+  );
+  
+  const categoryCounts = await query<Record<string, unknown>>(
+    `SELECT category, COUNT(*) as count FROM reports ${whereClause} GROUP BY category ORDER BY count DESC`,
+    params
+  );
+  
+  const recentTrend = await query<Record<string, unknown>>(`
+    SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+    FROM reports
+    ${whereClause ? `${whereClause} AND created_at >= NOW() - INTERVAL '90 days'` : `WHERE created_at >= NOW() - INTERVAL '90 days'`}
+    GROUP BY date ORDER BY date ASC
+  `, params);
+  
+  const countyCounts = await query<Record<string, unknown>>(
+    `SELECT county, COUNT(*) as count FROM reports ${whereClause} GROUP BY county ORDER BY count DESC`,
+    params
+  );
 
   return { byStatus: statusCounts, byCategory: categoryCounts, dailyTrend: recentTrend, byCounty: countyCounts };
 }
@@ -502,13 +522,19 @@ export async function exportReportsForAdmin(
 
   if (opts.status) { conditions.push(`r.status = $${paramIdx++}`); params.push(opts.status); }
   if (opts.category) { conditions.push(`r.category = $${paramIdx++}`); params.push(opts.category); }
-  if (opts.county) { conditions.push(`r.county ILIKE $${paramIdx++}`); params.push(`%${opts.county}%`); }
+  
+  if (opts.county) {
+    conditions.push(`(r.county ILIKE $${paramIdx} OR r.sub_county ILIKE $${paramIdx} OR r.ward ILIKE $${paramIdx} OR r.location_name ILIKE $${paramIdx})`);
+    params.push(`%${opts.county}%`);
+    paramIdx++;
+  }
+
   if (opts.start_date) { conditions.push(`r.created_at >= $${paramIdx++}::date`); params.push(opts.start_date); }
   if (opts.end_date) { conditions.push(`r.created_at < ($${paramIdx++}::date + INTERVAL '1 day')`); params.push(opts.end_date); }
 
   if (opts.user && !opts.user.is_root_admin && opts.user.county) {
-    conditions.push(`r.county = $${paramIdx++}`);
-    params.push(opts.user.county);
+    conditions.push(`r.county ILIKE $${paramIdx++}`);
+    params.push(`%${opts.user.county}%`);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -517,7 +543,7 @@ export async function exportReportsForAdmin(
            r.sub_county, r.ward, r.created_at, r.updated_at,
            u.full_name AS citizen_name
     FROM reports r
-    JOIN users u ON u.id = r.citizen_id
+    LEFT JOIN users u ON u.id = r.citizen_id
     ${whereClause}
     ORDER BY r.created_at DESC
     LIMIT 5000
@@ -537,10 +563,13 @@ function validateStatusTransition(current: ReportStatus, next: ReportStatus): vo
   };
 
   if (!allowedTransitions[current]?.includes(next)) {
+    const allowed = allowedTransitions[current]?.join(', ') || 'none';
     throw new AppError(
       `Cannot transition from '${current}' to '${next}'.`,
       400,
-      'INVALID_STATUS_TRANSITION'
+      'INVALID_STATUS_TRANSITION',
+      true,
+      `From '${current}', you can only transition to: ${allowed}. Please check the report status workflow.`
     );
   }
 }

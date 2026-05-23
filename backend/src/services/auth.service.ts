@@ -154,16 +154,16 @@ export async function loginUser(input: LoginInput): Promise<AuthSessionResult> {
   // Constant-time comparison to prevent timing attacks
   if (!user) {
     await bcrypt.compare(input.password, '$2b$12$invalidhashpadding000000000000000000000000000000000000');
-    throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS', true, 'Please double-check your credentials. If you forgot your password, use the "Forgot Password" link.');
   }
 
   if (!user.is_active) {
-    throw new AppError('This account has been deactivated. Contact your county water authority.', 403, 'ACCOUNT_INACTIVE');
+    throw new AppError('This account has been deactivated.', 403, 'ACCOUNT_INACTIVE', true, 'Please contact your county water authority or system administrator to reactivate your account.');
   }
 
   const valid = await bcrypt.compare(input.password, user.password_hash);
   if (!valid) {
-    throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid email or password.', 401, 'INVALID_CREDENTIALS', true, 'Please double-check your credentials. If you forgot your password, use the "Forgot Password" link.');
   }
 
   // Update last login timestamp
@@ -412,7 +412,7 @@ export async function resetPasswordWithToken(
       user_agent: context?.user_agent ?? null,
       metadata: { token_prefix: token.slice(0, 8) },
     });
-    throw new AppError('Invalid or expired reset token.', 400, 'INVALID_RESET_TOKEN');
+    throw new AppError('Invalid or expired reset token.', 400, 'INVALID_RESET_TOKEN', true, 'The link you followed may have expired or was already used. Please request a new password reset link.');
   }
 
   if (resetRow.used || new Date(resetRow.expires_at).getTime() < Date.now()) {
@@ -422,7 +422,7 @@ export async function resetPasswordWithToken(
       ip_address: context?.ip_address ?? null,
       user_agent: context?.user_agent ?? null,
     });
-    throw new AppError('Invalid or expired reset token.', 400, 'INVALID_RESET_TOKEN');
+    throw new AppError('Invalid or expired reset token.', 400, 'INVALID_RESET_TOKEN', true, 'The link you followed may have expired or was already used. Please request a new password reset link.');
   }
 
   const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);

@@ -43,15 +43,15 @@ router.post(
 
 /**
  * GET /api/reports/my/reports
- * Citizen: Returns a list of reports submitted by the authenticated user.
+ * Shared: Returns a list of reports submitted by the authenticated user.
  */
-router.get('/my/reports', authenticate, authorize('citizen'), reportsController.getMyReports);
+router.get('/my/reports', authenticate, authorize('citizen', 'admin'), reportsController.getMyReports);
 
 /**
  * POST /api/reports/:id/upvote
- * Citizen: Toggles a community upvote on a specific report.
+ * Shared: Toggles a community upvote on a specific report.
  */
-router.post('/:id/upvote', authenticate, authorize('citizen'), reportsController.upvoteReport);
+router.post('/:id/upvote', authenticate, authorize('citizen', 'admin'), reportsController.upvoteReport);
 
 /**
  * DELETE /api/reports/:id/images/:imageId

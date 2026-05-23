@@ -9,12 +9,20 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
   public readonly isOperational: boolean;
+  public readonly suggestion?: string;
 
-  constructor(message: string, statusCode = 500, code = 'INTERNAL_ERROR', isOperational = true) {
+  constructor(
+    message: string,
+    statusCode = 500,
+    code = 'INTERNAL_ERROR',
+    isOperational = true,
+    suggestion?: string
+  ) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
     this.isOperational = isOperational;
+    this.suggestion = suggestion;
     Object.setPrototypeOf(this, new.target.prototype);
     Error.captureStackTrace(this, this.constructor);
   }
@@ -46,6 +54,7 @@ export function globalErrorHandler(
       success: false,
       error: err.message,
       code: err.code,
+      suggestion: err.suggestion,
     });
     return;
   }
@@ -56,6 +65,7 @@ export function globalErrorHandler(
       success: false,
       error: 'A record with this information already exists.',
       code: 'DUPLICATE_ENTRY',
+      suggestion: 'Please check your input (e.g., email or reference code) and try a different value.',
     });
     return;
   }
@@ -65,18 +75,30 @@ export function globalErrorHandler(
       success: false,
       error: 'Referenced record does not exist.',
       code: 'FOREIGN_KEY_VIOLATION',
+      suggestion: 'The item you are trying to link to might have been deleted. Please refresh and try again.',
     });
     return;
   }
 
-  // PostgreSQL: undefined_table (e.g. forgot to run migrations after pulling refresh_sessions)
+  // PostgreSQL: undefined_table (e.g. forgot to run migrations)
   const pgCode = (err as { code?: string }).code;
   if (pgCode === '42P01') {
     res.status(503).json({
       success: false,
-      error:
-        'Database schema is missing expected tables. From the repo root run: npm run migrate --prefix backend',
+      error: 'Database schema is missing expected tables.',
       code: 'SCHEMA_OUTDATED',
+      suggestion: 'The system administrator needs to run database migrations: npm run migrate --prefix backend',
+    });
+    return;
+  }
+
+  // Handle ECONNRESET
+  if (pgCode === 'ECONNRESET' || err.message?.includes('ECONNRESET')) {
+    res.status(503).json({
+      success: false,
+      error: 'Database connection was reset.',
+      code: 'DB_CONNECTION_RESET',
+      suggestion: 'The connection to the database was temporarily lost. Please wait a few seconds and try your request again.',
     });
     return;
   }
@@ -87,6 +109,7 @@ export function globalErrorHandler(
     success: false,
     error: isProduction ? 'An internal server error occurred.' : err.message,
     code: 'INTERNAL_ERROR',
+    suggestion: 'This appears to be a system error. If it persists, please contact technical support.',
   });
 }
 
